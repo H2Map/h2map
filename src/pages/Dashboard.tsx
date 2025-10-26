@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Layers } from 'lucide-react';
+import { ArrowLeft, MapPin } from 'lucide-react';
+import Map from '@/components/Map';
 
 export default function Dashboard() {
   return (
@@ -24,9 +24,8 @@ export default function Dashboard() {
             <MapPin className="w-6 h-6 text-emerald-600" />
             Mapa Interativo
           </h2>
-          <div className="bg-emerald-50 rounded-lg p-8 text-center">
-            <Layers className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
-            <p className="text-slate-600">Componente de mapa será implementado aqui</p>
+          <div className="h-[600px] w-full">
+            <Map />
           </div>
         </div>
       </div>
