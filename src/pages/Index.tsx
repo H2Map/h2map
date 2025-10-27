@@ -26,9 +26,9 @@ export default function Index() {
               <a href="#features" className="text-slate-600 hover:text-emerald-600 transition-colors">
                 Recursos
               </a>
-              <a href="#conservation" className="text-slate-600 hover:text-emerald-600 transition-colors">
-                Conservação
-              </a>
+              <Link to="/feasibility" className="text-slate-600 hover:text-emerald-600 transition-colors">
+                Análise de Viabilidade
+              </Link>
               <Link to="/dashboard" className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors">
                 Demonstração
               </Link>
@@ -44,7 +44,7 @@ export default function Index() {
           <div className="md:hidden bg-white border-t border-emerald-100">
             <div className="px-4 py-2 space-y-1">
               <a href="#features" className="block px-3 py-2 text-slate-600 hover:text-emerald-600">Recursos</a>
-              <a href="#conservation" className="block px-3 py-2 text-slate-600 hover:text-emerald-600">Conservação</a>
+              <Link to="/feasibility" className="block px-3 py-2 text-slate-600 hover:text-emerald-600">Análise de Viabilidade</Link>
               <Link to="/dashboard" className="block px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
                 Demonstração
               </Link>
@@ -73,6 +73,10 @@ export default function Index() {
                 <Link to="/dashboard" className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2">
                   <span>Começar Análise</span>
                   <ChevronRight className="w-5 h-5" />
+                </Link>
+                <Link to="/feasibility" className="bg-white text-emerald-600 px-6 py-3 rounded-lg hover:bg-emerald-50 transition-colors flex items-center justify-center space-x-2 border border-emerald-600">
+                  <BarChart3 className="w-5 h-5" />
+                  <span>Análise de Viabilidade</span>
                 </Link>
               </div>
             </motion.div>
