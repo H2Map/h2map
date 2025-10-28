@@ -619,7 +619,7 @@ const Statistics = () => {
               <BarChart3 className="w-5 h-5 mr-2 text-emerald-600" />
               Resumo Estatístico
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="p-4 bg-red-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <Thermometer className="w-5 h-5 text-red-600" />
@@ -651,6 +651,13 @@ const Statistics = () => {
                   <span className="text-sm text-slate-600">Solar</span>
                 </div>
                 <div className="text-2xl font-bold text-slate-900">{statistics.avgSolarIrradiance} W/m²</div>
+              </div>
+              <div className="p-4 bg-cyan-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <Droplets className="w-5 h-5 text-cyan-600" />
+                  <span className="text-sm text-slate-600">Precipitação</span>
+                </div>
+                <div className="text-2xl font-bold text-slate-900">{statistics.totalRainfall} mm</div>
               </div>
             </div>
           </div>
