@@ -20,12 +20,13 @@ const Navigation = () => {
     <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-emerald-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center group">
+          <Link to="/" className="flex items-center space-x-3 group">
             <img 
               src={logo} 
               alt="H2maps Neoenergia" 
-              className="h-12 w-auto group-hover:scale-105 transition-transform"
+              className="h-10 w-auto group-hover:scale-105 transition-transform"
             />
+            <span className="text-2xl font-bold text-slate-900">H2Maps</span>
           </Link>
 
           {/* Desktop Navigation */}
