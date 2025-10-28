@@ -38,12 +38,72 @@ class WeatherService {
 
   async getHistoricalWeather(lat: number, lon: number, startDate: Date, endDate: Date) {
     try {
-      // Simulate historical data since OpenWeatherMap historical API requires paid subscription
+      // Try to fetch real INMET data
+      const inmetData = await this.fetchINMETData(lat, lon, startDate, endDate);
+      if (inmetData && inmetData.length > 0) {
+        return inmetData;
+      }
+      // Fallback to mock data if INMET fails
       return this.generateMockHistoricalData(lat, lon, startDate, endDate);
     } catch (error) {
       console.error('Error fetching historical weather data:', error);
       return this.generateMockHistoricalData(lat, lon, startDate, endDate);
     }
+  }
+
+  private async fetchINMETData(lat: number, lon: number, startDate: Date, endDate: Date) {
+    try {
+      // Format dates as YYYY-MM-DD for INMET API
+      const startDateStr = format(startDate, 'yyyy-MM-dd');
+      const endDateStr = format(endDate, 'yyyy-MM-dd');
+      
+      // Find nearest INMET station (using a default station for now)
+      // In production, you'd call fetch-inmet-stations and find the closest one
+      const stationCode = 'A001'; // Default station code
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-inmet-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          stationCode,
+          startDate: startDateStr,
+          endDate: endDateStr,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('INMET API request failed:', response.status);
+        return null;
+      }
+
+      const { data } = await response.json();
+      
+      // Transform INMET data to our format
+      return this.transformINMETData(data);
+    } catch (error) {
+      console.error('Error fetching INMET data:', error);
+      return null;
+    }
+  }
+
+  private transformINMETData(inmetData: any[]): HistoricalData[] {
+    if (!inmetData || !Array.isArray(inmetData)) return [];
+
+    return inmetData.map(item => ({
+      date: new Date(item.DT_MEDICAO || item.data || new Date()),
+      temperature: parseFloat(item.TEM_INS || item.temperatura_bulbo_hora || 0),
+      humidity: parseFloat(item.UMD_INS || item.umidade_rel_max || 0),
+      windSpeed: parseFloat(item.VEN_VEL || item.vento_velocidade || 0),
+      windDirection: parseFloat(item.VEN_DIR || item.vento_direcao || 0),
+      pressure: parseFloat(item.PRE_INS || item.pressao_atm_max || 0),
+      uvIndex: 0, // INMET doesn't provide UV index
+      visibility: 10, // Default visibility
+      rainfall: parseFloat(item.CHUVA || item.precipitacao_total || 0),
+      solarIrradiance: parseFloat(item.RAD_GLO || item.radiacao_global || 0)
+    }));
   }
 
   async getCurrentWeather(lat: number, lon: number) {

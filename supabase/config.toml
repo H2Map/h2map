@@ -1,1 +1,7 @@
 project_id = "ernubxpsllxprtdylmcy"
+
+[functions.fetch-inmet-data]
+verify_jwt = false
+
+[functions.fetch-inmet-stations]
+verify_jwt = false
