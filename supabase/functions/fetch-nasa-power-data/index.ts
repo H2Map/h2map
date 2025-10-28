@@ -86,6 +86,37 @@ serve(async (req) => {
     const avgHumidity = humidityValues.reduce((a, b) => a + b, 0) / humidityValues.length;
     const totalPrecipitation = precipValues.reduce((a, b) => a + b, 0);
 
+    // Prepare daily data arrays for simulation
+    const dailyData: Array<{
+      date: string;
+      solarIrradiance: number;
+      windSpeed: number;
+      temperature: number;
+      humidity: number;
+      precipitation: number;
+    }> = [];
+
+    const dates = Object.keys(solarData);
+    for (const date of dates) {
+      const solar = solarData[date];
+      const wind = windData[date];
+      const temp = tempData[date];
+      const humidity = humidityData[date];
+      const precip = precipData[date];
+
+      // Only include valid data points
+      if (solar > -999 && wind > -999 && !isNaN(solar) && !isNaN(wind)) {
+        dailyData.push({
+          date,
+          solarIrradiance: solar,
+          windSpeed: wind,
+          temperature: temp > -999 ? temp : avgTemperature,
+          humidity: humidity > -999 ? humidity : avgHumidity,
+          precipitation: precip > -999 ? precip : 0
+        });
+      }
+    }
+
     const summary = {
       location: { lat, lon },
       dateRange: { start: startDate, end: endDate },
@@ -97,10 +128,11 @@ serve(async (req) => {
         humidity: avgHumidity,               // %
         totalPrecipitation: totalPrecipitation // mm
       },
+      dailyData: dailyData, // Include full daily profile
       source: 'NASA POWER'
     };
 
-    console.log('NASA POWER summary:', summary.averages);
+    console.log('NASA POWER summary:', summary.averages, `${dailyData.length} days of data`);
 
     return new Response(
       JSON.stringify(summary),

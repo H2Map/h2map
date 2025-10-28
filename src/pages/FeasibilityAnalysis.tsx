@@ -59,6 +59,15 @@ interface EnergyCalculations {
   annualH2Production: number; // kg/ano (toneladas)
 }
 
+interface DailyData {
+  date: string;
+  solarIrradiance: number;
+  windSpeed: number;
+  temperature: number;
+  humidity: number;
+  precipitation: number;
+}
+
 interface WeatherData {
   avgTemperature: number;
   avgSolarIrradiance: number;
@@ -67,6 +76,18 @@ interface WeatherData {
   avgPressure: number;
   totalRainfall: number;
   dataPoints: number;
+  dailyData?: DailyData[];
+}
+
+interface SimulationResult {
+  totalEnergyConsumed: number; // kWh/ano
+  h2Production: number; // kg/ano
+  capacityFactor: number; // %
+  curtailment: number; // kWh perdido
+  operatingHours: number; // horas no ano
+  lcoh: number; // R$/kg
+  capexAnnualized: number; // R$/ano
+  opexAnnual: number; // R$/ano
 }
 
 const FeasibilityAnalysis = () => {
@@ -78,6 +99,11 @@ const FeasibilityAnalysis = () => {
   const [analyzedLocation, setAnalyzedLocation] = useState(localLocation);
   const [loading, setLoading] = useState(false);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [simulationResults, setSimulationResults] = useState<{
+    oneYear: SimulationResult | null;
+    threeYears: SimulationResult | null;
+    fiveYears: SimulationResult | null;
+  }>({ oneYear: null, threeYears: null, fiveYears: null });
 
   useEffect(() => {
     if (selectedLocation) {
@@ -146,9 +172,15 @@ const FeasibilityAnalysis = () => {
           avgPressure: 1013, // Standard atmospheric pressure (NASA POWER doesn't provide this)
           totalRainfall: avgData.totalPrecipitation,
           dataPoints: data.daysAnalyzed,
+          dailyData: data.dailyData, // Store daily profile for simulation
         });
 
         toast.success(`✅ Dados reais da NASA POWER: ${data.daysAnalyzed} dias analisados`);
+        
+        // Run simulation with real data
+        if (data.dailyData && data.dailyData.length > 0) {
+          runHourlySimulation(data.dailyData);
+        }
       } else {
         console.log('No weather data available, using estimates');
         toast.warning('Usando estimativas regionais para análise.');
@@ -256,6 +288,144 @@ const FeasibilityAnalysis = () => {
       waterResources,
       waterStatus
     };
+  };
+
+  // Função para simular operação do eletrolisador hora a hora
+  const runHourlySimulation = (dailyData: DailyData[]) => {
+    console.log('Starting hourly simulation with', dailyData.length, 'days of data');
+    
+    // Parâmetros do projeto para 1, 3 e 5 anos
+    const scenarios = [
+      { years: 1, electrolyzerNominalPower: 100 }, // kW
+      { years: 3, electrolyzerNominalPower: 300 }, // kW
+      { years: 5, electrolyzerNominalPower: 500 }, // kW
+    ];
+    
+    const results: SimulationResult[] = [];
+    
+    for (const scenario of scenarios) {
+      const { electrolyzerNominalPower } = scenario;
+      
+      // Parâmetros da instalação
+      const solarPanelArea = 1000; // m²
+      const solarEfficiency = 0.20; // 20%
+      const windTurbineArea = 314; // m² (turbina pequena)
+      const windEfficiency = 0.40; // 40%
+      const airDensity = 1.225; // kg/m³
+      
+      // Limites operacionais do eletrolisador
+      const minOperatingLoad = 0.20; // 20% da capacidade nominal (mínimo técnico)
+      const electrolyzerMinPower = electrolyzerNominalPower * minOperatingLoad; // kW
+      
+      // Parâmetros de eficiência
+      const electrolyzerConsumption = 58; // kWh/kg H2
+      const systemEfficiency = 0.85; // 85% eficiência do sistema
+      
+      // Custos (valores realistas 2024-2025)
+      const solarCapexPerKW = 3500; // R$/kW
+      const windCapexPerKW = 10000; // R$/kW
+      const electrolyzerCapexPerKW = 18000; // R$/kW
+      const infrastructureMultiplier = 0.40; // +40% para infraestrutura
+      const projectLifetime = 20; // anos
+      const discountRate = 0.10; // 10% taxa de desconto
+      const opexPercentage = 0.03; // 3% do CAPEX por ano (O&M)
+      const waterCostPerKg = 0.02; // R$/kg H2 (custo da água)
+      
+      // Variáveis da simulação
+      let totalEnergyConsumed = 0; // kWh
+      let totalCurtailment = 0; // kWh
+      let operatingHours = 0; // horas
+      
+      // Simular cada dia
+      for (const day of dailyData) {
+        // Calcular energia disponível por hora (simplificação: distribuição uniforme do dia)
+        // Solar: concentrada durante o dia (assumir 12 horas de sol)
+        // Eólica: distribuída nas 24 horas
+        
+        const dailySolarEnergy = day.solarIrradiance * solarPanelArea * solarEfficiency; // kWh/dia
+        const solarPowerPerHour = dailySolarEnergy / 12; // kW por hora (durante 12 horas de sol)
+        
+        const windPowerPeak = (0.5 * airDensity * windTurbineArea * Math.pow(day.windSpeed, 3) * windEfficiency) / 1000;
+        const windPowerPerHour = windPowerPeak * 0.30; // kW (com fator de capacidade)
+        
+        // Simular 24 horas
+        for (let hour = 0; hour < 24; hour++) {
+          // Solar disponível apenas durante o dia (6h-18h)
+          const solarAvailable = (hour >= 6 && hour < 18) ? solarPowerPerHour : 0;
+          const windAvailable = windPowerPerHour;
+          const totalPowerAvailable = (solarAvailable + windAvailable) * systemEfficiency;
+          
+          // Lógica de operação do eletrolisador
+          if (totalPowerAvailable >= electrolyzerNominalPower) {
+            // Opera a 100% - energia extra é perdida (curtailment)
+            totalEnergyConsumed += electrolyzerNominalPower;
+            totalCurtailment += (totalPowerAvailable - electrolyzerNominalPower);
+            operatingHours += 1;
+          } else if (totalPowerAvailable >= electrolyzerMinPower) {
+            // Opera em carga parcial
+            totalEnergyConsumed += totalPowerAvailable;
+            operatingHours += 1;
+          }
+          // else: desliga (energia < mínimo)
+        }
+      }
+      
+      // Anualizar resultados (multiplicar pelos anos do cenário)
+      const annualEnergyConsumed = totalEnergyConsumed;
+      const annualH2Production = annualEnergyConsumed / electrolyzerConsumption; // kg/ano
+      
+      // Calcular Fator de Capacidade
+      const totalHoursInPeriod = dailyData.length * 24;
+      const capacityFactor = (totalEnergyConsumed / (electrolyzerNominalPower * totalHoursInPeriod)) * 100;
+      
+      // Calcular custos
+      const estimatedSolarPower = 50; // kW (estimativa conservadora)
+      const estimatedWindPower = 30; // kW
+      
+      const totalCapex = 
+        (estimatedSolarPower * solarCapexPerKW) +
+        (estimatedWindPower * windCapexPerKW) +
+        (electrolyzerNominalPower * electrolyzerCapexPerKW) +
+        ((estimatedSolarPower * solarCapexPerKW + estimatedWindPower * windCapexPerKW) * infrastructureMultiplier);
+      
+      // Anualizar CAPEX (usando fator de recuperação de capital)
+      const crf = (discountRate * Math.pow(1 + discountRate, projectLifetime)) / 
+                  (Math.pow(1 + discountRate, projectLifetime) - 1);
+      const capexAnnualized = totalCapex * crf;
+      
+      // OPEX anual
+      const opexAnnual = (totalCapex * opexPercentage) + (annualH2Production * waterCostPerKg);
+      
+      // LCOH (Levelized Cost of Hydrogen)
+      const lcoh = (capexAnnualized + opexAnnual) / annualH2Production;
+      
+      results.push({
+        totalEnergyConsumed: annualEnergyConsumed,
+        h2Production: annualH2Production,
+        capacityFactor: capacityFactor,
+        curtailment: totalCurtailment,
+        operatingHours: operatingHours,
+        lcoh: lcoh,
+        capexAnnualized: capexAnnualized,
+        opexAnnual: opexAnnual
+      });
+      
+      console.log(`Scenario ${scenario.years} year(s):`, {
+        electrolyzerPower: electrolyzerNominalPower,
+        energyConsumed: annualEnergyConsumed.toFixed(0),
+        h2Production: annualH2Production.toFixed(2),
+        capacityFactor: capacityFactor.toFixed(1) + '%',
+        lcoh: lcoh.toFixed(2)
+      });
+    }
+    
+    setSimulationResults({
+      oneYear: results[0],
+      threeYears: results[1],
+      fiveYears: results[2]
+    });
+    
+    toast.success('✅ Simulação horária completa com dados reais!');
   };
 
   const locationData = calculateLocationData(analyzedLocation.lat, analyzedLocation.lng);
@@ -799,6 +969,189 @@ const FeasibilityAnalysis = () => {
             </Tabs>
           </Card>
         </motion.div>
+
+        {/* Resultados da Simulação Horária com Dados Reais */}
+        {simulationResults.oneYear && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <Card className="p-6 bg-white/80 backdrop-blur-sm border-blue-200">
+              <div className="flex items-center space-x-3 mb-6">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+                <h2 className="text-2xl font-bold text-slate-900">Simulação Horária com Dados Reais (360 dias)</h2>
+                <Badge className="bg-green-100 text-green-800 border-green-300">
+                  ✓ Dados NASA POWER
+                </Badge>
+              </div>
+
+              <Tabs defaultValue="1" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="1">Cenário 1 Ano (100 kW)</TabsTrigger>
+                  <TabsTrigger value="3">Cenário 3 Anos (300 kW)</TabsTrigger>
+                  <TabsTrigger value="5">Cenário 5 Anos (500 kW)</TabsTrigger>
+                </TabsList>
+
+                {/* Cenário 1 Ano */}
+                <TabsContent value="1">
+                  <div className="space-y-6">
+                    {/* Métricas Principais */}
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                        <p className="text-sm text-slate-700 mb-1">⚡ Fator de Capacidade</p>
+                        <p className="text-3xl font-bold text-green-600">{simulationResults.oneYear.capacityFactor.toFixed(1)}%</p>
+                        <p className="text-xs text-slate-600 mt-2">Eficiência operacional do eletrolisador</p>
+                      </Card>
+
+                      <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                        <p className="text-sm text-slate-700 mb-1">💰 LCOH</p>
+                        <p className="text-3xl font-bold text-blue-600">R$ {simulationResults.oneYear.lcoh.toFixed(2)}</p>
+                        <p className="text-xs text-slate-600 mt-2">por kg de H₂</p>
+                      </Card>
+
+                      <Card className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200">
+                        <p className="text-sm text-slate-700 mb-1">🔋 Energia Consumida</p>
+                        <p className="text-3xl font-bold text-purple-600">{(simulationResults.oneYear.totalEnergyConsumed / 1000).toFixed(1)}</p>
+                        <p className="text-xs text-slate-600 mt-2">MWh/ano</p>
+                      </Card>
+
+                      <Card className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+                        <p className="text-sm text-slate-700 mb-1">💧 Produção H₂</p>
+                        <p className="text-3xl font-bold text-emerald-600">{(simulationResults.oneYear.h2Production / 1000).toFixed(2)}</p>
+                        <p className="text-xs text-slate-600 mt-2">ton/ano</p>
+                      </Card>
+                    </div>
+
+                    {/* Métricas Operacionais */}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <Card className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+                        <p className="text-sm text-slate-700 mb-1">⏰ Horas de Operação</p>
+                        <p className="text-2xl font-bold text-amber-600">{simulationResults.oneYear.operatingHours.toLocaleString()}</p>
+                        <p className="text-xs text-slate-600 mt-2">horas/ano de {(weatherData?.dataPoints || 365) * 24} total</p>
+                      </Card>
+
+                      <Card className="p-4 bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
+                        <p className="text-sm text-slate-700 mb-1">⚠️ Curtailment</p>
+                        <p className="text-2xl font-bold text-red-600">{(simulationResults.oneYear.curtailment / 1000).toFixed(1)}</p>
+                        <p className="text-xs text-slate-600 mt-2">MWh perdido/ano</p>
+                      </Card>
+
+                      <Card className="p-4 bg-gradient-to-br from-slate-50 to-gray-50 border-slate-200">
+                        <p className="text-sm text-slate-700 mb-1">📊 Potência Nominal</p>
+                        <p className="text-2xl font-bold text-slate-600">100 kW</p>
+                        <p className="text-xs text-slate-600 mt-2">Eletrolisador dimensionado</p>
+                      </Card>
+                    </div>
+
+                    {/* Custos Detalhados */}
+                    <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">💵 Detalhamento de Custos (LCOH)</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-slate-700 mb-1">CAPEX Anualizado:</p>
+                          <p className="text-xl font-bold text-indigo-600">R$ {simulationResults.oneYear.capexAnnualized.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-700 mb-1">OPEX Anual:</p>
+                          <p className="text-xl font-bold text-indigo-600">R$ {simulationResults.oneYear.opexAnnual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-3 p-2 bg-white/50 rounded">
+                        <strong>Fórmula LCOH:</strong> (CAPEX Anualizado + OPEX Anual) / Produção Anual de H₂
+                      </p>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                {/* Cenário 3 Anos */}
+                <TabsContent value="3">
+                  <div className="space-y-6">
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                        <p className="text-sm text-slate-700 mb-1">⚡ Fator de Capacidade</p>
+                        <p className="text-3xl font-bold text-green-600">{simulationResults.threeYears!.capacityFactor.toFixed(1)}%</p>
+                      </Card>
+                      <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                        <p className="text-sm text-slate-700 mb-1">💰 LCOH</p>
+                        <p className="text-3xl font-bold text-blue-600">R$ {simulationResults.threeYears!.lcoh.toFixed(2)}</p>
+                      </Card>
+                      <Card className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200">
+                        <p className="text-sm text-slate-700 mb-1">🔋 Energia Consumida</p>
+                        <p className="text-3xl font-bold text-purple-600">{(simulationResults.threeYears!.totalEnergyConsumed / 1000).toFixed(1)} MWh</p>
+                      </Card>
+                      <Card className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+                        <p className="text-sm text-slate-700 mb-1">💧 Produção H₂</p>
+                        <p className="text-3xl font-bold text-emerald-600">{(simulationResults.threeYears!.h2Production / 1000).toFixed(2)} ton</p>
+                      </Card>
+                    </div>
+                    <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">💵 Custos (300 kW)</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-slate-700">CAPEX Anualizado: R$ {simulationResults.threeYears!.capexAnnualized.toLocaleString('pt-BR')}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-700">OPEX Anual: R$ {simulationResults.threeYears!.opexAnnual.toLocaleString('pt-BR')}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                {/* Cenário 5 Anos */}
+                <TabsContent value="5">
+                  <div className="space-y-6">
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                        <p className="text-sm text-slate-700 mb-1">⚡ Fator de Capacidade</p>
+                        <p className="text-3xl font-bold text-green-600">{simulationResults.fiveYears!.capacityFactor.toFixed(1)}%</p>
+                      </Card>
+                      <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                        <p className="text-sm text-slate-700 mb-1">💰 LCOH</p>
+                        <p className="text-3xl font-bold text-blue-600">R$ {simulationResults.fiveYears!.lcoh.toFixed(2)}</p>
+                      </Card>
+                      <Card className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200">
+                        <p className="text-sm text-slate-700 mb-1">🔋 Energia Consumida</p>
+                        <p className="text-3xl font-bold text-purple-600">{(simulationResults.fiveYears!.totalEnergyConsumed / 1000).toFixed(1)} MWh</p>
+                      </Card>
+                      <Card className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+                        <p className="text-sm text-slate-700 mb-1">💧 Produção H₂</p>
+                        <p className="text-3xl font-bold text-emerald-600">{(simulationResults.fiveYears!.h2Production / 1000).toFixed(2)} ton</p>
+                      </Card>
+                    </div>
+                    <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">💵 Custos (500 kW)</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-slate-700">CAPEX Anualizado: R$ {simulationResults.fiveYears!.capexAnnualized.toLocaleString('pt-BR')}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-700">OPEX Anual: R$ {simulationResults.fiveYears!.opexAnnual.toLocaleString('pt-BR')}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              {/* Explicação */}
+              <Card className="mt-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">📊 Sobre a Simulação</h3>
+                <p className="text-sm text-slate-700 mb-2">
+                  Análise com {weatherData?.dataPoints || 365} dias de dados reais NASA POWER, simulando operação hora a hora:
+                </p>
+                <ul className="text-sm text-slate-700 space-y-1 ml-4 list-disc">
+                  <li><strong>Fator de Capacidade:</strong> Eficiência real do eletrolisador</li>
+                  <li><strong>LCOH:</strong> Custo nivelado do H₂ (CAPEX + OPEX / Produção)</li>
+                  <li><strong>Curtailment:</strong> Energia renovável desperdiçada</li>
+                  <li><strong>Operação:</strong> 20-100% quando energia disponível nessa faixa</li>
+                </ul>
+              </Card>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Resumo Financeiro e Viabilidade */}
         <motion.div
