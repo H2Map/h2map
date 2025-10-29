@@ -1265,7 +1265,7 @@ const FeasibilityAnalysis = () => {
                       <p className="text-3xl font-bold text-slate-900">R$ {simulationResults.threeYears!.lcoh.toFixed(2)}</p>
                       <p className="text-xs text-slate-600 mt-1">por kg de H₂</p>
                       <Badge className="mt-2 bg-blue-100 text-blue-800 text-xs">
-                        {simulationResults.threeYears!.lcoh < 8 ? '✓ Competitivo' : '~ Razoável'}
+                        {simulationResults.threeYears!.lcoh < 8 ? '✓ Competitivo' : simulationResults.threeYears!.lcoh < 12 ? '~ Razoável' : '⚠ Alto'}
                       </Badge>
                     </Card>
 
@@ -1275,8 +1275,9 @@ const FeasibilityAnalysis = () => {
                         <span className="text-sm font-medium text-slate-700">Fator Capacidade</span>
                       </div>
                       <p className="text-3xl font-bold text-slate-900">{simulationResults.threeYears!.capacityFactor.toFixed(1)}%</p>
+                      <p className="text-xs text-slate-600 mt-1">Eficiência operacional</p>
                       <Badge className="mt-2 bg-emerald-100 text-emerald-800 text-xs">
-                        {simulationResults.threeYears!.capacityFactor > 40 ? '✓ Excelente' : '~ Bom'}
+                        {simulationResults.threeYears!.capacityFactor > 40 ? '✓ Excelente' : simulationResults.threeYears!.capacityFactor > 25 ? '~ Bom' : '⚠ Baixo'}
                       </Badge>
                     </Card>
 
@@ -1295,25 +1296,38 @@ const FeasibilityAnalysis = () => {
                         <span className="text-sm font-medium text-slate-700">Receita Potencial</span>
                       </div>
                       <p className="text-3xl font-bold text-slate-900">
-                        R$ {(simulationResults.threeYears!.h2Production * 25 / 1000).toFixed(0)}k
+                        R$ {(simulationResults.threeYears!.h2Production * 25).toFixed(0)}k
                       </p>
-                      <p className="text-xs text-slate-600 mt-1">Anual</p>
+                      <p className="text-xs text-slate-600 mt-1">Anual (R$ 25/kg H₂)</p>
                     </Card>
                   </div>
 
+                  {/* Análise ROI */}
                   <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">📊 Análise de Retorno (300 kW)</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">📊 Análise de Retorno sobre Investimento</h3>
                     <div className="grid md:grid-cols-3 gap-4">
                       <div>
-                        <p className="text-sm text-slate-700">CAPEX: R$ {(simulationResults.threeYears!.capexAnnualized / 0.117 / 1000000).toFixed(2)}M</p>
+                        <p className="text-sm text-slate-700 mb-1">CAPEX Total:</p>
+                        <p className="text-xl font-bold text-green-600">
+                          R$ {(simulationResults.threeYears!.capexAnnualized / 0.117).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-700">Payback: {((simulationResults.threeYears!.capexAnnualized / 0.117) / (simulationResults.threeYears!.h2Production * 25 - simulationResults.threeYears!.opexAnnual)).toFixed(1)} anos</p>
+                        <p className="text-sm text-slate-700 mb-1">Payback Estimado:</p>
+                        <p className="text-xl font-bold text-green-600">
+                          {((simulationResults.threeYears!.capexAnnualized / 0.117) / (simulationResults.threeYears!.h2Production * 25 - simulationResults.threeYears!.opexAnnual)).toFixed(1)} anos
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-700">ROI: {(((simulationResults.threeYears!.h2Production * 25 - simulationResults.threeYears!.opexAnnual) / (simulationResults.threeYears!.capexAnnualized / 0.117)) * 100).toFixed(1)}%</p>
+                        <p className="text-sm text-slate-700 mb-1">ROI Anual:</p>
+                        <p className="text-xl font-bold text-green-600">
+                          {(((simulationResults.threeYears!.h2Production * 25 - simulationResults.threeYears!.opexAnnual) / (simulationResults.threeYears!.capexAnnualized / 0.117)) * 100).toFixed(1)}%
+                        </p>
                       </div>
                     </div>
+                    <p className="text-xs text-slate-600 mt-3 p-2 bg-white/50 rounded">
+                      💡 Assumindo preço de venda de R$ 25/kg e taxa de desconto de 10% ao ano
+                    </p>
                   </Card>
                 </TabsContent>
 
@@ -1328,7 +1342,7 @@ const FeasibilityAnalysis = () => {
                       <p className="text-3xl font-bold text-slate-900">R$ {simulationResults.fiveYears!.lcoh.toFixed(2)}</p>
                       <p className="text-xs text-slate-600 mt-1">por kg de H₂</p>
                       <Badge className="mt-2 bg-blue-100 text-blue-800 text-xs">
-                        {simulationResults.fiveYears!.lcoh < 8 ? '✓ Competitivo' : '~ Razoável'}
+                        {simulationResults.fiveYears!.lcoh < 8 ? '✓ Competitivo' : simulationResults.fiveYears!.lcoh < 12 ? '~ Razoável' : '⚠ Alto'}
                       </Badge>
                     </Card>
 
@@ -1338,8 +1352,9 @@ const FeasibilityAnalysis = () => {
                         <span className="text-sm font-medium text-slate-700">Fator Capacidade</span>
                       </div>
                       <p className="text-3xl font-bold text-slate-900">{simulationResults.fiveYears!.capacityFactor.toFixed(1)}%</p>
+                      <p className="text-xs text-slate-600 mt-1">Eficiência operacional</p>
                       <Badge className="mt-2 bg-emerald-100 text-emerald-800 text-xs">
-                        {simulationResults.fiveYears!.capacityFactor > 40 ? '✓ Excelente' : '~ Bom'}
+                        {simulationResults.fiveYears!.capacityFactor > 40 ? '✓ Excelente' : simulationResults.fiveYears!.capacityFactor > 25 ? '~ Bom' : '⚠ Baixo'}
                       </Badge>
                     </Card>
 
@@ -1358,25 +1373,38 @@ const FeasibilityAnalysis = () => {
                         <span className="text-sm font-medium text-slate-700">Receita Potencial</span>
                       </div>
                       <p className="text-3xl font-bold text-slate-900">
-                        R$ {(simulationResults.fiveYears!.h2Production * 25 / 1000).toFixed(0)}k
+                        R$ {(simulationResults.fiveYears!.h2Production * 25).toFixed(0)}k
                       </p>
-                      <p className="text-xs text-slate-600 mt-1">Anual</p>
+                      <p className="text-xs text-slate-600 mt-1">Anual (R$ 25/kg H₂)</p>
                     </Card>
                   </div>
 
+                  {/* Análise ROI */}
                   <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">📊 Análise de Retorno (500 kW)</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">📊 Análise de Retorno sobre Investimento</h3>
                     <div className="grid md:grid-cols-3 gap-4">
                       <div>
-                        <p className="text-sm text-slate-700">CAPEX: R$ {(simulationResults.fiveYears!.capexAnnualized / 0.117 / 1000000).toFixed(2)}M</p>
+                        <p className="text-sm text-slate-700 mb-1">CAPEX Total:</p>
+                        <p className="text-xl font-bold text-green-600">
+                          R$ {(simulationResults.fiveYears!.capexAnnualized / 0.117).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-700">Payback: {((simulationResults.fiveYears!.capexAnnualized / 0.117) / (simulationResults.fiveYears!.h2Production * 25 - simulationResults.fiveYears!.opexAnnual)).toFixed(1)} anos</p>
+                        <p className="text-sm text-slate-700 mb-1">Payback Estimado:</p>
+                        <p className="text-xl font-bold text-green-600">
+                          {((simulationResults.fiveYears!.capexAnnualized / 0.117) / (simulationResults.fiveYears!.h2Production * 25 - simulationResults.fiveYears!.opexAnnual)).toFixed(1)} anos
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-700">ROI: {(((simulationResults.fiveYears!.h2Production * 25 - simulationResults.fiveYears!.opexAnnual) / (simulationResults.fiveYears!.capexAnnualized / 0.117)) * 100).toFixed(1)}%</p>
+                        <p className="text-sm text-slate-700 mb-1">ROI Anual:</p>
+                        <p className="text-xl font-bold text-green-600">
+                          {(((simulationResults.fiveYears!.h2Production * 25 - simulationResults.fiveYears!.opexAnnual) / (simulationResults.fiveYears!.capexAnnualized / 0.117)) * 100).toFixed(1)}%
+                        </p>
                       </div>
                     </div>
+                    <p className="text-xs text-slate-600 mt-3 p-2 bg-white/50 rounded">
+                      💡 Assumindo preço de venda de R$ 25/kg e taxa de desconto de 10% ao ano
+                    </p>
                   </Card>
                 </TabsContent>
               </Tabs>
@@ -1442,94 +1470,287 @@ const FeasibilityAnalysis = () => {
                 </Badge>
               </div>
 
-              <div className="space-y-4">
-                {/* Viabilidade Técnica */}
-                <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
-                  simulationResults.oneYear.capacityFactor > 30 
-                    ? 'bg-emerald-50 border-emerald-200' 
-                    : 'bg-amber-50 border-amber-200'
-                }`}>
-                  {simulationResults.oneYear.capacityFactor > 30 ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Técnica</h3>
-                    <p className="text-sm text-slate-700">
-                      Fator de Capacidade de {simulationResults.oneYear.capacityFactor.toFixed(1)}% 
-                      {simulationResults.oneYear.capacityFactor > 40 && ' - Excelente! Acima da média do setor (30-35%).'}
-                      {simulationResults.oneYear.capacityFactor > 30 && simulationResults.oneYear.capacityFactor <= 40 && ' - Bom! Dentro da média esperada para projetos de H₂ verde.'}
-                      {simulationResults.oneYear.capacityFactor <= 30 && ' - Abaixo da média. Recomenda-se aumentar capacidade de geração renovável ou reduzir tamanho do eletrolisador.'}
-                    </p>
-                    <p className="text-xs text-slate-600 mt-2">
-                      📊 Benchmark da indústria: 30-40% para sistemas híbridos solar+eólico
-                    </p>
-                  </div>
-                </div>
+              <Tabs defaultValue="1" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="1">Cenário 1 Ano (100 kW)</TabsTrigger>
+                  <TabsTrigger value="3">Cenário 3 Anos (300 kW)</TabsTrigger>
+                  <TabsTrigger value="5">Cenário 5 Anos (500 kW)</TabsTrigger>
+                </TabsList>
 
-                {/* Viabilidade Econômica */}
-                <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
-                  simulationResults.oneYear.lcoh < 10 
-                    ? 'bg-emerald-50 border-emerald-200' 
-                    : simulationResults.oneYear.lcoh < 15
-                    ? 'bg-amber-50 border-amber-200'
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  {simulationResults.oneYear.lcoh < 10 ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Econômica</h3>
-                    <p className="text-sm text-slate-700">
-                      LCOH de R$ {simulationResults.oneYear.lcoh.toFixed(2)}/kg 
-                      {simulationResults.oneYear.lcoh < 8 && ' - Altamente competitivo! Abaixo do H₂ cinza (R$ 8-10/kg).'}
-                      {simulationResults.oneYear.lcoh >= 8 && simulationResults.oneYear.lcoh < 12 && ' - Competitivo com incentivos fiscais e créditos de carbono.'}
-                      {simulationResults.oneYear.lcoh >= 12 && ' - Alto. Projeto pode necessitar de subsídios ou otimizações.'}
-                    </p>
-                    <p className="text-xs text-slate-600 mt-2">
-                      📊 H₂ Cinza: R$ 8-10/kg | H₂ Verde (Meta 2030): R$ 6-8/kg | Preço Mercado Atual: R$ 20-30/kg
-                    </p>
-                  </div>
-                </div>
+                {/* Cenário 1 Ano */}
+                <TabsContent value="1">
+                  <div className="space-y-4">
+                    {/* Viabilidade Técnica */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      simulationResults.oneYear.capacityFactor > 30 
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      {simulationResults.oneYear.capacityFactor > 30 ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Técnica</h3>
+                        <p className="text-sm text-slate-700">
+                          Fator de Capacidade de {simulationResults.oneYear.capacityFactor.toFixed(1)}% 
+                          {simulationResults.oneYear.capacityFactor > 40 && ' - Excelente! Acima da média do setor (30-35%).'}
+                          {simulationResults.oneYear.capacityFactor > 30 && simulationResults.oneYear.capacityFactor <= 40 && ' - Bom! Dentro da média esperada para projetos de H₂ verde.'}
+                          {simulationResults.oneYear.capacityFactor <= 30 && ' - Abaixo da média. Recomenda-se aumentar capacidade de geração renovável ou reduzir tamanho do eletrolisador.'}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          📊 Benchmark da indústria: 30-40% para sistemas híbridos solar+eólico
+                        </p>
+                      </div>
+                    </div>
 
-                {/* Produção e Escala */}
-                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Produção e Escala</h3>
-                    <p className="text-sm text-slate-700">
-                      Produção anual estimada de {(simulationResults.oneYear.h2Production / 1000).toFixed(2)} toneladas de H₂ verde 
-                      no cenário de 100 kW. Potencial de expansão para {(simulationResults.fiveYears!.h2Production / 1000).toFixed(2)} ton/ano 
-                      com eletrolisador de 500 kW.
-                    </p>
-                    <p className="text-xs text-slate-600 mt-2">
-                      💡 Projeto adequado para fase piloto. Escala comercial típica: 10-50 ton/ano.
-                    </p>
-                  </div>
-                </div>
+                    {/* Viabilidade Econômica */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      simulationResults.oneYear.lcoh < 10 
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : simulationResults.oneYear.lcoh < 15
+                        ? 'bg-amber-50 border-amber-200'
+                        : 'bg-red-50 border-red-200'
+                    }`}>
+                      {simulationResults.oneYear.lcoh < 10 ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Econômica</h3>
+                        <p className="text-sm text-slate-700">
+                          LCOH de R$ {simulationResults.oneYear.lcoh.toFixed(2)}/kg 
+                          {simulationResults.oneYear.lcoh < 8 && ' - Altamente competitivo! Abaixo do H₂ cinza (R$ 8-10/kg).'}
+                          {simulationResults.oneYear.lcoh >= 8 && simulationResults.oneYear.lcoh < 12 && ' - Competitivo com incentivos fiscais e créditos de carbono.'}
+                          {simulationResults.oneYear.lcoh >= 12 && ' - Alto. Projeto pode necessitar de subsídios ou otimizações.'}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          📊 H₂ Cinza: R$ 8-10/kg | H₂ Verde (Meta 2030): R$ 6-8/kg | Preço Mercado Atual: R$ 20-30/kg
+                        </p>
+                      </div>
+                    </div>
 
-                {/* Retorno de Investimento */}
-                <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
-                  ((simulationResults.oneYear.capexAnnualized / 0.117) / (simulationResults.oneYear.h2Production * 25 - simulationResults.oneYear.opexAnnual)) < 7
-                    ? 'bg-emerald-50 border-emerald-200' 
-                    : 'bg-amber-50 border-amber-200'
-                }`}>
-                  <TrendingUp className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Retorno sobre Investimento</h3>
-                    <p className="text-sm text-slate-700">
-                      Payback estimado de {((simulationResults.oneYear.capexAnnualized / 0.117) / (simulationResults.oneYear.h2Production * 25 - simulationResults.oneYear.opexAnnual)).toFixed(1)} anos 
-                      considerando preço de venda de R$ 25/kg. ROI anual de {(((simulationResults.oneYear.h2Production * 25 - simulationResults.oneYear.opexAnnual) / (simulationResults.oneYear.capexAnnualized / 0.117)) * 100).toFixed(1)}%.
-                    </p>
-                    <p className="text-xs text-slate-600 mt-2">
-                      ⚠️ Sensível ao preço de venda do H₂. Com incentivos governamentais, payback pode reduzir 20-30%.
-                    </p>
+                    {/* Produção e Escala */}
+                    <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Produção e Escala</h3>
+                        <p className="text-sm text-slate-700">
+                          Produção anual estimada de {(simulationResults.oneYear.h2Production / 1000).toFixed(2)} toneladas de H₂ verde 
+                          no cenário de 100 kW. Potencial de expansão para {(simulationResults.fiveYears!.h2Production / 1000).toFixed(2)} ton/ano 
+                          com eletrolisador de 500 kW.
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          💡 Projeto adequado para fase piloto. Escala comercial típica: 10-50 ton/ano.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Retorno de Investimento */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      ((simulationResults.oneYear.capexAnnualized / 0.117) / (simulationResults.oneYear.h2Production * 25 - simulationResults.oneYear.opexAnnual)) < 7
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      <TrendingUp className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Retorno sobre Investimento</h3>
+                        <p className="text-sm text-slate-700">
+                          Payback estimado de {((simulationResults.oneYear.capexAnnualized / 0.117) / (simulationResults.oneYear.h2Production * 25 - simulationResults.oneYear.opexAnnual)).toFixed(1)} anos 
+                          considerando preço de venda de R$ 25/kg. ROI anual de {(((simulationResults.oneYear.h2Production * 25 - simulationResults.oneYear.opexAnnual) / (simulationResults.oneYear.capexAnnualized / 0.117)) * 100).toFixed(1)}%.
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          ⚠️ Sensível ao preço de venda do H₂. Com incentivos governamentais, payback pode reduzir 20-30%.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </TabsContent>
+
+                {/* Cenário 3 Anos */}
+                <TabsContent value="3">
+                  <div className="space-y-4">
+                    {/* Viabilidade Técnica */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      simulationResults.threeYears!.capacityFactor > 30 
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      {simulationResults.threeYears!.capacityFactor > 30 ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Técnica</h3>
+                        <p className="text-sm text-slate-700">
+                          Fator de Capacidade de {simulationResults.threeYears!.capacityFactor.toFixed(1)}% 
+                          {simulationResults.threeYears!.capacityFactor > 40 && ' - Excelente! Acima da média do setor (30-35%).'}
+                          {simulationResults.threeYears!.capacityFactor > 30 && simulationResults.threeYears!.capacityFactor <= 40 && ' - Bom! Dentro da média esperada para projetos de H₂ verde.'}
+                          {simulationResults.threeYears!.capacityFactor <= 30 && ' - Abaixo da média. Recomenda-se aumentar capacidade de geração renovável ou reduzir tamanho do eletrolisador.'}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          📊 Benchmark da indústria: 30-40% para sistemas híbridos solar+eólico
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Viabilidade Econômica */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      simulationResults.threeYears!.lcoh < 10 
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : simulationResults.threeYears!.lcoh < 15
+                        ? 'bg-amber-50 border-amber-200'
+                        : 'bg-red-50 border-red-200'
+                    }`}>
+                      {simulationResults.threeYears!.lcoh < 10 ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Econômica</h3>
+                        <p className="text-sm text-slate-700">
+                          LCOH de R$ {simulationResults.threeYears!.lcoh.toFixed(2)}/kg 
+                          {simulationResults.threeYears!.lcoh < 8 && ' - Altamente competitivo! Abaixo do H₂ cinza (R$ 8-10/kg).'}
+                          {simulationResults.threeYears!.lcoh >= 8 && simulationResults.threeYears!.lcoh < 12 && ' - Competitivo com incentivos fiscais e créditos de carbono.'}
+                          {simulationResults.threeYears!.lcoh >= 12 && ' - Alto. Projeto pode necessitar de subsídios ou otimizações.'}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          📊 H₂ Cinza: R$ 8-10/kg | H₂ Verde (Meta 2030): R$ 6-8/kg | Preço Mercado Atual: R$ 20-30/kg
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Produção e Escala */}
+                    <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Produção e Escala</h3>
+                        <p className="text-sm text-slate-700">
+                          Produção anual estimada de {(simulationResults.threeYears!.h2Production / 1000).toFixed(2)} toneladas de H₂ verde 
+                          no cenário de 300 kW. Este eletrolisador de média capacidade é adequado para projetos industriais de pequeno porte.
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          💡 Capacidade ideal para projetos em expansão. Escala comercial típica: 10-50 ton/ano.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Retorno de Investimento */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      ((simulationResults.threeYears!.capexAnnualized / 0.117) / (simulationResults.threeYears!.h2Production * 25 - simulationResults.threeYears!.opexAnnual)) < 7
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      <TrendingUp className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Retorno sobre Investimento</h3>
+                        <p className="text-sm text-slate-700">
+                          Payback estimado de {((simulationResults.threeYears!.capexAnnualized / 0.117) / (simulationResults.threeYears!.h2Production * 25 - simulationResults.threeYears!.opexAnnual)).toFixed(1)} anos 
+                          considerando preço de venda de R$ 25/kg. ROI anual de {(((simulationResults.threeYears!.h2Production * 25 - simulationResults.threeYears!.opexAnnual) / (simulationResults.threeYears!.capexAnnualized / 0.117)) * 100).toFixed(1)}%.
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          ⚠️ Sensível ao preço de venda do H₂. Com incentivos governamentais, payback pode reduzir 20-30%.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Cenário 5 Anos */}
+                <TabsContent value="5">
+                  <div className="space-y-4">
+                    {/* Viabilidade Técnica */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      simulationResults.fiveYears!.capacityFactor > 30 
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      {simulationResults.fiveYears!.capacityFactor > 30 ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Técnica</h3>
+                        <p className="text-sm text-slate-700">
+                          Fator de Capacidade de {simulationResults.fiveYears!.capacityFactor.toFixed(1)}% 
+                          {simulationResults.fiveYears!.capacityFactor > 40 && ' - Excelente! Acima da média do setor (30-35%).'}
+                          {simulationResults.fiveYears!.capacityFactor > 30 && simulationResults.fiveYears!.capacityFactor <= 40 && ' - Bom! Dentro da média esperada para projetos de H₂ verde.'}
+                          {simulationResults.fiveYears!.capacityFactor <= 30 && ' - Abaixo da média. Recomenda-se aumentar capacidade de geração renovável ou reduzir tamanho do eletrolisador.'}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          📊 Benchmark da indústria: 30-40% para sistemas híbridos solar+eólico
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Viabilidade Econômica */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      simulationResults.fiveYears!.lcoh < 10 
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : simulationResults.fiveYears!.lcoh < 15
+                        ? 'bg-amber-50 border-amber-200'
+                        : 'bg-red-50 border-red-200'
+                    }`}>
+                      {simulationResults.fiveYears!.lcoh < 10 ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Viabilidade Econômica</h3>
+                        <p className="text-sm text-slate-700">
+                          LCOH de R$ {simulationResults.fiveYears!.lcoh.toFixed(2)}/kg 
+                          {simulationResults.fiveYears!.lcoh < 8 && ' - Altamente competitivo! Abaixo do H₂ cinza (R$ 8-10/kg).'}
+                          {simulationResults.fiveYears!.lcoh >= 8 && simulationResults.fiveYears!.lcoh < 12 && ' - Competitivo com incentivos fiscais e créditos de carbono.'}
+                          {simulationResults.fiveYears!.lcoh >= 12 && ' - Alto. Projeto pode necessitar de subsídios ou otimizações.'}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          📊 H₂ Cinza: R$ 8-10/kg | H₂ Verde (Meta 2030): R$ 6-8/kg | Preço Mercado Atual: R$ 20-30/kg
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Produção e Escala */}
+                    <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Produção e Escala</h3>
+                        <p className="text-sm text-slate-700">
+                          Produção anual estimada de {(simulationResults.fiveYears!.h2Production / 1000).toFixed(2)} toneladas de H₂ verde 
+                          no cenário de 500 kW. Este eletrolisador de grande capacidade é ideal para operações comerciais de escala industrial.
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          💡 Escala comercial plena. Adequado para contratos de longo prazo com grandes consumidores industriais.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Retorno de Investimento */}
+                    <div className={`flex items-start space-x-3 p-4 rounded-lg border ${
+                      ((simulationResults.fiveYears!.capexAnnualized / 0.117) / (simulationResults.fiveYears!.h2Production * 25 - simulationResults.fiveYears!.opexAnnual)) < 7
+                        ? 'bg-emerald-50 border-emerald-200' 
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      <TrendingUp className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-1">Retorno sobre Investimento</h3>
+                        <p className="text-sm text-slate-700">
+                          Payback estimado de {((simulationResults.fiveYears!.capexAnnualized / 0.117) / (simulationResults.fiveYears!.h2Production * 25 - simulationResults.fiveYears!.opexAnnual)).toFixed(1)} anos 
+                          considerando preço de venda de R$ 25/kg. ROI anual de {(((simulationResults.fiveYears!.h2Production * 25 - simulationResults.fiveYears!.opexAnnual) / (simulationResults.fiveYears!.capexAnnualized / 0.117)) * 100).toFixed(1)}%.
+                        </p>
+                        <p className="text-xs text-slate-600 mt-2">
+                          ⚠️ Sensível ao preço de venda do H₂. Com incentivos governamentais, payback pode reduzir 20-30%.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </Card>
           </motion.div>
         )}
