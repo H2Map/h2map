@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Statistics from "./pages/Statistics";
 import FeasibilityAnalysis from "./pages/FeasibilityAnalysis";
 import ImportMunicipalities from "./pages/ImportMunicipalities";
+import AutoImport from "./pages/AutoImport";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/statistics" element={<Statistics />} />
         <Route path="/feasibility" element={<FeasibilityAnalysis />} />
         <Route path="/import-municipalities" element={<ImportMunicipalities />} />
+        <Route path="/auto-import" element={<AutoImport />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
