@@ -23,7 +23,13 @@ import {
   MapPin,
   Clock,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  CloudRain,
+  CloudSnow,
+  Cloud,
+  CloudDrizzle,
+  Sunrise,
+  Sunset
 } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import * as XLSX from 'xlsx';
@@ -263,6 +269,57 @@ interface StatisticsSummary {
   avgPressure: number;
   avgUVIndex: number;
   dataPoints: number;
+  // Advanced statistics
+  tempStdDev: number;
+  windSpeedStdDev: number;
+  rainyDays: number;
+  sunnyDays: number;
+  avgDailyEnergyPotential: number; // kWh/m²/day
+}
+
+interface WeatherForecast {
+  location: {
+    name: string;
+    lat: number;
+    lon: number;
+  };
+  current: {
+    temp: number;
+    feelsLike: number;
+    humidity: number;
+    windSpeed: number;
+    windDirection: number;
+    pressure: number;
+    visibility: number;
+    clouds: number;
+    weather: {
+      main: string;
+      description: string;
+      icon: string;
+    };
+    sunrise: number;
+    sunset: number;
+    timezone: number;
+  };
+  forecast: Array<{
+    date: string;
+    dayName: string;
+    temp: {
+      min: number;
+      max: number;
+      avg: number;
+    };
+    weather: {
+      main: string;
+      description: string;
+      icon: string;
+    };
+    humidity: number;
+    windSpeed: number;
+    pressure: number;
+    rainfall: number;
+    clouds: number;
+  }>;
 }
 
 const Statistics = () => {
@@ -286,6 +343,8 @@ const Statistics = () => {
   const [selectedParameters, setSelectedParameters] = useState<string[]>([
     'temperature', 'humidity', 'windSpeed', 'pressure', 'rainfall', 'solarIrradiance'
   ]);
+  const [forecast, setForecast] = useState<WeatherForecast | null>(null);
+  const [loadingForecast, setLoadingForecast] = useState(false);
 
   const weatherService = new WeatherService();
 
@@ -324,8 +383,40 @@ const Statistics = () => {
   useEffect(() => {
     if (selectedLocation) {
       loadData();
+      loadForecast();
     }
   }, [selectedLocation, dateRange, customStartDate, customEndDate]);
+
+  const loadForecast = async () => {
+    if (!selectedLocation) return;
+
+    setLoadingForecast(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-weather-forecast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          lat: selectedLocation.lat,
+          lon: selectedLocation.lng,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch weather forecast');
+      }
+
+      const forecastData = await response.json();
+      setForecast(forecastData);
+      console.log('Weather forecast loaded:', forecastData);
+    } catch (error) {
+      console.error('Error loading forecast:', error);
+    } finally {
+      setLoadingForecast(false);
+    }
+  };
 
   const loadData = async () => {
     if (!selectedLocation) return;
@@ -381,18 +472,42 @@ const Statistics = () => {
   const calculateStatistics = (data: HistoricalData[]) => {
     if (data.length === 0) return;
 
+    // Basic statistics
+    const avgTemperature = data.reduce((sum, d) => sum + d.temperature, 0) / data.length;
+    const avgWindSpeed = data.reduce((sum, d) => sum + d.windSpeed, 0) / data.length;
+    
+    // Calculate standard deviations
+    const tempVariances = data.map(d => Math.pow(d.temperature - avgTemperature, 2));
+    const tempStdDev = Math.sqrt(tempVariances.reduce((sum, v) => sum + v, 0) / data.length);
+    
+    const windVariances = data.map(d => Math.pow(d.windSpeed - avgWindSpeed, 2));
+    const windSpeedStdDev = Math.sqrt(windVariances.reduce((sum, v) => sum + v, 0) / data.length);
+    
+    // Count rainy and sunny days
+    const rainyDays = data.filter(d => d.rainfall > 1).length; // Days with >1mm rainfall
+    const sunnyDays = data.filter(d => d.solarIrradiance > 600).length; // Days with high solar irradiance
+    
+    // Calculate average daily energy potential (solar)
+    // Convert W/m² average to kWh/m²/day (assuming 12 hours of daylight)
+    const avgDailyEnergyPotential = data.reduce((sum, d) => sum + (d.solarIrradiance * 12 / 1000), 0) / data.length;
+
     const stats: StatisticsSummary = {
-      avgTemperature: parseFloat((data.reduce((sum, d) => sum + d.temperature, 0) / data.length).toFixed(1)),
+      avgTemperature: parseFloat(avgTemperature.toFixed(1)),
       maxTemperature: parseFloat(Math.max(...data.map(d => d.temperature)).toFixed(1)),
       minTemperature: parseFloat(Math.min(...data.map(d => d.temperature)).toFixed(1)),
       avgHumidity: Math.round(data.reduce((sum, d) => sum + d.humidity, 0) / data.length),
-      avgWindSpeed: parseFloat((data.reduce((sum, d) => sum + d.windSpeed, 0) / data.length).toFixed(1)),
+      avgWindSpeed: parseFloat(avgWindSpeed.toFixed(1)),
       maxWindSpeed: parseFloat(Math.max(...data.map(d => d.windSpeed)).toFixed(1)),
       totalRainfall: parseFloat(data.reduce((sum, d) => sum + d.rainfall, 0).toFixed(1)),
       avgSolarIrradiance: parseFloat((data.reduce((sum, d) => sum + d.solarIrradiance, 0) / data.length).toFixed(1)),
       avgPressure: Math.round(data.reduce((sum, d) => sum + d.pressure, 0) / data.length),
       avgUVIndex: parseFloat((data.reduce((sum, d) => sum + d.uvIndex, 0) / data.length).toFixed(1)),
-      dataPoints: data.length
+      dataPoints: data.length,
+      tempStdDev: parseFloat(tempStdDev.toFixed(1)),
+      windSpeedStdDev: parseFloat(windSpeedStdDev.toFixed(1)),
+      rainyDays,
+      sunnyDays,
+      avgDailyEnergyPotential: parseFloat(avgDailyEnergyPotential.toFixed(2))
     };
 
     setStatistics(stats);
@@ -430,13 +545,18 @@ const Statistics = () => {
         exportData.push({ 'Data': 'Média Temperatura (°C)', 'Valor': statistics.avgTemperature });
         exportData.push({ 'Data': 'Temperatura Máxima (°C)', 'Valor': statistics.maxTemperature });
         exportData.push({ 'Data': 'Temperatura Mínima (°C)', 'Valor': statistics.minTemperature });
+        exportData.push({ 'Data': 'Desvio Padrão Temperatura (°C)', 'Valor': statistics.tempStdDev });
         exportData.push({ 'Data': 'Média Umidade (%)', 'Valor': statistics.avgHumidity });
         exportData.push({ 'Data': 'Média Velocidade Vento (m/s)', 'Valor': statistics.avgWindSpeed });
         exportData.push({ 'Data': 'Velocidade Máxima Vento (m/s)', 'Valor': statistics.maxWindSpeed });
+        exportData.push({ 'Data': 'Desvio Padrão Vento (m/s)', 'Valor': statistics.windSpeedStdDev });
         exportData.push({ 'Data': 'Precipitação Total (mm)', 'Valor': statistics.totalRainfall });
         exportData.push({ 'Data': 'Média Irradiação Solar (W/m²)', 'Valor': statistics.avgSolarIrradiance });
+        exportData.push({ 'Data': 'Potencial Energético Diário (kWh/m²/dia)', 'Valor': statistics.avgDailyEnergyPotential });
         exportData.push({ 'Data': 'Média Pressão (hPa)', 'Valor': statistics.avgPressure });
         exportData.push({ 'Data': 'Média Índice UV', 'Valor': statistics.avgUVIndex });
+        exportData.push({ 'Data': 'Dias Ensolarados', 'Valor': statistics.sunnyDays });
+        exportData.push({ 'Data': 'Dias Chuvosos', 'Valor': statistics.rainyDays });
         exportData.push({ 'Data': 'Total de Pontos de Dados', 'Valor': statistics.dataPoints });
       }
 
@@ -604,6 +724,157 @@ const Statistics = () => {
           </div>
         </div>
 
+        {/* Weather Forecast Section */}
+        {!loadingForecast && forecast && selectedLocation && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-lg border border-emerald-100 p-6 mb-6"
+          >
+            <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Sun className="w-5 h-5 mr-2 text-emerald-600" />
+              Previsão do Tempo para {forecast.location.name}
+            </h2>
+
+            {/* Current Weather Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 mb-6 border border-blue-100">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-1">Tempo Atual</h3>
+                  <p className="text-slate-600 capitalize">{forecast.current.weather.description}</p>
+                </div>
+                <img
+                  src={`https://openweathermap.org/img/wn/${forecast.current.weather.icon}@2x.png`}
+                  alt={forecast.current.weather.description}
+                  className="w-20 h-20"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white/60 backdrop-blur rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Thermometer className="w-4 h-4 text-red-600" />
+                    <span className="text-xs text-slate-600">Temperatura</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{forecast.current.temp.toFixed(1)}°C</p>
+                  <p className="text-xs text-slate-600">Sensação: {forecast.current.feelsLike.toFixed(1)}°C</p>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Droplets className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs text-slate-600">Umidade</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{forecast.current.humidity}%</p>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wind className="w-4 h-4 text-green-600" />
+                    <span className="text-xs text-slate-600">Vento</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{forecast.current.windSpeed.toFixed(1)} m/s</p>
+                  <p className="text-xs text-slate-600">Dir: {forecast.current.windDirection}°</p>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Gauge className="w-4 h-4 text-slate-600" />
+                    <span className="text-xs text-slate-600">Pressão</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{forecast.current.pressure}</p>
+                  <p className="text-xs text-slate-600">hPa</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="bg-white/60 backdrop-blur rounded-lg p-3 flex items-center gap-3">
+                  <Sunrise className="w-8 h-8 text-orange-500" />
+                  <div>
+                    <p className="text-xs text-slate-600">Nascer do Sol</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {new Date(forecast.current.sunrise * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-white/60 backdrop-blur rounded-lg p-3 flex items-center gap-3">
+                  <Sunset className="w-8 h-8 text-purple-500" />
+                  <div>
+                    <p className="text-xs text-slate-600">Pôr do Sol</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {new Date(forecast.current.sunset * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 5-Day Forecast */}
+            <div>
+              <h3 className="text-md font-semibold text-slate-900 mb-3">Próximos 5 Dias</h3>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                {forecast.forecast.map((day, index) => (
+                  <motion.div
+                    key={day.date}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200 hover:shadow-md transition-shadow"
+                  >
+                    <div className="text-center mb-3">
+                      <p className="text-sm font-semibold text-slate-900">{day.dayName}</p>
+                      <p className="text-xs text-slate-600">{format(new Date(day.date), 'dd/MM')}</p>
+                    </div>
+                    
+                    <div className="flex justify-center mb-3">
+                      <img
+                        src={`https://openweathermap.org/img/wn/${day.weather.icon}@2x.png`}
+                        alt={day.weather.description}
+                        className="w-16 h-16"
+                      />
+                    </div>
+
+                    <p className="text-xs text-slate-600 text-center mb-3 capitalize h-8">
+                      {day.weather.description}
+                    </p>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600">Temp:</span>
+                        <span className="font-semibold text-slate-900">
+                          {day.temp.max.toFixed(0)}° / {day.temp.min.toFixed(0)}°
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600">Umidade:</span>
+                        <span className="font-semibold text-slate-900">{day.humidity.toFixed(0)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600">Vento:</span>
+                        <span className="font-semibold text-slate-900">{day.windSpeed.toFixed(1)} m/s</span>
+                      </div>
+                      {day.rainfall > 0 && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600">Chuva:</span>
+                          <span className="font-semibold text-blue-600">{day.rainfall.toFixed(1)} mm</span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Loading Forecast State */}
+        {loadingForecast && selectedLocation && (
+          <div className="bg-white rounded-xl shadow-lg border border-emerald-100 p-8 mb-6 text-center">
+            <RefreshCw className="w-6 h-6 animate-spin text-emerald-600 mx-auto mb-3" />
+            <p className="text-slate-600">Carregando previsão do tempo...</p>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div className="bg-white rounded-xl shadow-lg border border-emerald-100 p-12 text-center">
@@ -617,9 +888,11 @@ const Statistics = () => {
           <div className="bg-white rounded-xl shadow-lg border border-emerald-100 p-6 mb-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
               <BarChart3 className="w-5 h-5 mr-2 text-emerald-600" />
-              Resumo Estatístico
+              Análise Estatística Detalhada
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            
+            {/* Main Statistics Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <div className="p-4 bg-red-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <Thermometer className="w-5 h-5 text-red-600" />
@@ -629,6 +902,9 @@ const Statistics = () => {
                 <div className="text-xs text-slate-600 mt-1">
                   Max: {statistics.maxTemperature}°C | Min: {statistics.minTemperature}°C
                 </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Desvio Padrão: ±{statistics.tempStdDev}°C
+                </div>
               </div>
               <div className="p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -636,6 +912,9 @@ const Statistics = () => {
                   <span className="text-sm text-slate-600">Umidade</span>
                 </div>
                 <div className="text-2xl font-bold text-slate-900">{statistics.avgHumidity}%</div>
+                <div className="text-xs text-slate-600 mt-1">
+                  Média do Período
+                </div>
               </div>
               <div className="p-4 bg-green-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -644,6 +923,9 @@ const Statistics = () => {
                 </div>
                 <div className="text-2xl font-bold text-slate-900">{statistics.avgWindSpeed} m/s</div>
                 <div className="text-xs text-slate-600 mt-1">Max: {statistics.maxWindSpeed} m/s</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Desvio Padrão: ±{statistics.windSpeedStdDev} m/s
+                </div>
               </div>
               <div className="p-4 bg-amber-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -651,6 +933,9 @@ const Statistics = () => {
                   <span className="text-sm text-slate-600">Solar</span>
                 </div>
                 <div className="text-2xl font-bold text-slate-900">{statistics.avgSolarIrradiance} W/m²</div>
+                <div className="text-xs text-slate-600 mt-1">
+                  Potencial: {statistics.avgDailyEnergyPotential} kWh/m²/dia
+                </div>
               </div>
               <div className="p-4 bg-cyan-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -658,6 +943,91 @@ const Statistics = () => {
                   <span className="text-sm text-slate-600">Precipitação</span>
                 </div>
                 <div className="text-2xl font-bold text-slate-900">{statistics.totalRainfall} mm</div>
+                <div className="text-xs text-slate-600 mt-1">
+                  Total no Período
+                </div>
+              </div>
+            </div>
+
+            {/* Advanced Statistics */}
+            <div className="border-t border-slate-200 pt-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Análise Avançada</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sun className="w-4 h-4 text-amber-600" />
+                    <span className="text-xs text-slate-600">Dias Ensolarados</span>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900">{statistics.sunnyDays}</div>
+                  <div className="text-xs text-slate-500">
+                    {((statistics.sunnyDays / statistics.dataPoints) * 100).toFixed(1)}% do período
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CloudRain className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs text-slate-600">Dias Chuvosos</span>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900">{statistics.rainyDays}</div>
+                  <div className="text-xs text-slate-500">
+                    {((statistics.rainyDays / statistics.dataPoints) * 100).toFixed(1)}% do período
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="w-4 h-4 text-emerald-600" />
+                    <span className="text-xs text-slate-600">Pontos de Dados</span>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900">{statistics.dataPoints}</div>
+                  <div className="text-xs text-slate-500">
+                    Registros analisados
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Gauge className="w-4 h-4 text-slate-600" />
+                    <span className="text-xs text-slate-600">Pressão Média</span>
+                  </div>
+                  <div className="text-xl font-bold text-slate-900">{statistics.avgPressure}</div>
+                  <div className="text-xs text-slate-500">
+                    hPa
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Energy Potential Analysis */}
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Potencial Energético</h3>
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Sun className="w-6 h-6 text-amber-600 mt-1" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-900 mb-1">
+                      Potencial Solar: {statistics.avgDailyEnergyPotential} kWh/m²/dia
+                    </p>
+                    <p className="text-xs text-slate-600 mb-2">
+                      Com base na irradiação solar média de {statistics.avgSolarIrradiance} W/m² durante o período analisado.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white/60 rounded px-2 py-1">
+                        <span className="text-slate-600">Geração estimada (1 kWp):</span>
+                        <span className="font-semibold text-slate-900 ml-1">
+                          {(statistics.avgDailyEnergyPotential * 0.8).toFixed(2)} kWh/dia
+                        </span>
+                      </div>
+                      <div className="bg-white/60 rounded px-2 py-1">
+                        <span className="text-slate-600">Geração mensal (1 kWp):</span>
+                        <span className="font-semibold text-slate-900 ml-1">
+                          {(statistics.avgDailyEnergyPotential * 0.8 * 30).toFixed(0)} kWh/mês
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
