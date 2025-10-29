@@ -11,6 +11,3 @@ verify_jwt = false
 
 [functions.fetch-nasa-power-data]
 verify_jwt = false
-
-[functions.import-municipalities]
-verify_jwt = false
