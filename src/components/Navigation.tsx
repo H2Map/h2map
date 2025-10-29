@@ -17,13 +17,13 @@ const Navigation = () => {
 
   return (
     <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-emerald-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[75px]">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Droplets className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-slate-900">H2maps</span>
+          <Link to="/" className="flex items-center space-x-2 group">       
+             <Link to="/" className="flex items-center space-x-2">
+              <img className="w-[100px] h-[80px]" src="/public/logoh2mapstrans.svg"/>             
+              <span className="text-xl font-bold text-slate-900">H2maps</span>
+            </Link>
           </Link>
 
           {/* Desktop Navigation */}
