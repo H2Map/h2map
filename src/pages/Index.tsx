@@ -12,11 +12,13 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
       {/* Navigation */}
-      <nav className=" fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-emerald-100">
+      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-emerald-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-[80px]">
+          <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-2">
-              <img className="w-[100px] h-[80px]" src="/public/logoh2mapstrans.svg"/>             
+              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                <Droplets className="w-5 h-5 text-white" />
+              </div>
               <span className="text-xl font-bold text-slate-900">H2maps</span>
             </Link>
 
@@ -82,24 +84,24 @@ export default function Index() {
             <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="relative">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-4">
-                  <div className="bg-white rounded-xl p-6 hover:shadow-xl transition-all hover:-translate-y-1 rounded-xl p-6 text-white shadow-lg">
+                  <div className="bg-white rounded-xl p-6 shadow-lg border border-emerald-100 hover:shadow-xl transition-all">
                     <Sun className="w-8 h-8 text-yellow-500 mb-3" />
                     <h3 className="font-bold text-slate-900 text-lg mb-2">Energia Solar</h3>
                     <p className="text-sm text-slate-600">Análise de irradiância solar e potencial fotovoltaico</p>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl hover:shadow-xl transition-all hover:-translate-y-1 rounded-xl p-6 text-white shadow-lg">
+                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
                     <MapPin className="w-8 h-8 mb-3" />
                     <h3 className="font-bold text-lg mb-2">Georreferenciamento Preciso</h3>
                     <p className="text-sm text-white/90">Dados geográficos exatos para planejamento eficiente</p>
                   </div>
                 </div>
                 <div className="space-y-4 pt-8">
-                  <div className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl hover:shadow-xl transition-all hover:-translate-y-1 rounded-xl p-6 text-white shadow-lg">
+                  <div className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-all">
                     <Wind className="w-8 h-8 mb-3" />
                     <h3 className="font-bold text-lg mb-2">Análise Eólica</h3>
                     <p className="text-sm text-white/90">Análise do vento para máximo aproveitamento energético</p>
                   </div>
-                  <div className="bg-white rounded-xl p-6 shadow-lg border border-emerald-100 hover:shadow-xl transition-all hover:-translate-y-1 rounded-xl p-6 text-white shadow-lg">
+                  <div className="bg-white rounded-xl p-6 shadow-lg border border-emerald-100 hover:shadow-xl transition-all">
                     <BarChart3 className="w-8 h-8 text-emerald-600 mb-3" />
                     <h3 className="font-bold text-slate-900 text-lg mb-2">Dados Climáticos</h3>
                     <p className="text-sm text-slate-600">Tempo, chuvas, ventos e padrões climáticos</p>
@@ -119,7 +121,7 @@ export default function Index() {
             <p className="text-slate-600 text-lg">Ferramentas completas para análise georreferenciada e tomada de decisão inteligente</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 ">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               { 
                 icon: <MapPin className="w-8 h-8" />, 
@@ -197,13 +199,13 @@ export default function Index() {
             </motion.div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 mb-16 ">
+          <div className="grid md:grid-cols-2 gap-12 mb-16">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="space-y-6 "
+              className="space-y-6"
             >
               {[
                 { icon: <Map className="w-6 h-6" />, text: "Mapeamento de áreas de proteção ambiental" },
@@ -218,7 +220,7 @@ export default function Index() {
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="hover:shadow-xl transition-all hover:-translate-y-1 flex items-start space-x-4 bg-white p-4 rounded-lg shadow-sm border border-emerald-100"
+                  className="flex items-start space-x-4 bg-white p-4 rounded-lg shadow-sm border border-emerald-100"
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
                     {item.icon}
@@ -233,7 +235,7 @@ export default function Index() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="grid grid-cols-2 gap-6  "
+              className="grid grid-cols-2 gap-6"
             >
               {[
                 { number: "1.200+", label: "Áreas Protegidas", color: "from-emerald-500 to-teal-600" },
@@ -243,11 +245,11 @@ export default function Index() {
               ].map((stat, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, scale: 1.0 }}
-                  whileInView={{ opacity: 1.0, scale: 1.0 }}
-                  transition={{ duration: 0.5, delay: index * 0.2 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className={`bg-gradient-to-br ${stat.color}  rounded-xl p-6 text-white hover:shadow-xl transition-all hover:-translate-y-1 rounded-xl p-6 shadow-lg`}
+                  className={`bg-gradient-to-br ${stat.color} rounded-xl p-6 text-white shadow-lg`}
                 >
                   <div className="text-4xl font-bold mb-2">{stat.number}</div>
                   <div className="text-white/90 font-medium">{stat.label}</div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
   Sun, 
   Wind, 
@@ -13,11 +14,14 @@ import {
   Zap,
   BarChart3,
   FileText,
-  Loader2
+  Loader2,
+  Database
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import Navigation from '@/components/Navigation';
 import LocationSearch from '@/components/LocationSearch';
 import { useLocationStore } from '@/store/locationStore';
@@ -754,23 +758,23 @@ const FeasibilityAnalysis = () => {
           ) : (
             <>
 
-        {/* Cálculos de Produção de Energia e H2 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
-          <Card className="p-6 bg-white/80 backdrop-blur-sm border-emerald-200">
-            <div className="flex items-center space-x-3 mb-6">
-              <Zap className="w-6 h-6 text-emerald-600" />
-              <h2 className="text-2xl font-bold text-slate-900">Cálculo de Produção de Energia e Hidrogênio Verde</h2>
-              <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                📐 Fórmulas Reais
-              </Badge>
-            </div>
-
-            <Tabs defaultValue="1" className="w-full">
+        {/* Seções Expansíveis */}
+        <Accordion type="multiple" defaultValue={["producao", "simulacao", "financeiro", "ambiental", "viabilidade", "recomendacoes"]} className="space-y-4">
+          
+          {/* Cálculo de Produção de Energia */}
+          <AccordionItem value="producao" className="border-none">
+            <Card className="bg-white/80 backdrop-blur-sm border-emerald-200 overflow-hidden">
+              <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-emerald-50/50 transition-colors">
+                <div className="flex items-center space-x-3 w-full">
+                  <Zap className="w-6 h-6 text-emerald-600" />
+                  <h2 className="text-2xl font-bold text-slate-900">Cálculo de Produção de Energia e Hidrogênio Verde</h2>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-300 ml-auto">
+                    📐 Fórmulas Reais
+                  </Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <Tabs defaultValue="1" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="1">1 Ano</TabsTrigger>
                 <TabsTrigger value="3">3 Anos</TabsTrigger>
@@ -1046,26 +1050,25 @@ const FeasibilityAnalysis = () => {
                   </div>
                 </div>
               </TabsContent>
-            </Tabs>
-          </Card>
-        </motion.div>
+                </Tabs>
+              </AccordionContent>
+            </Card>
+          </AccordionItem>
 
-        {/* Resultados da Simulação Horária com Dados Reais */}
-        {simulationResults.oneYear && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
-          >
-            <Card className="p-6 bg-white/80 backdrop-blur-sm border-blue-200">
-              <div className="flex items-center space-x-3 mb-6">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
-                <h2 className="text-2xl font-bold text-slate-900">Simulação Horária com Dados Reais (360 dias)</h2>
-                <Badge className="bg-green-100 text-green-800 border-green-300">
-                  ✓ Dados NASA POWER
-                </Badge>
-              </div>
+          {/* Simulação Horária */}
+          {simulationResults.oneYear && (
+            <AccordionItem value="simulacao" className="border-none">
+              <Card className="bg-white/80 backdrop-blur-sm border-blue-200 overflow-hidden">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-blue-50/50 transition-colors">
+                  <div className="flex items-center space-x-3 w-full">
+                    <BarChart3 className="w-6 h-6 text-blue-600" />
+                    <h2 className="text-2xl font-bold text-slate-900">Simulação Horária com Dados Reais (360 dias)</h2>
+                    <Badge className="bg-green-100 text-green-800 border-green-300 ml-auto">
+                      ✓ Dados NASA POWER
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
 
               <Tabs defaultValue="1" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -1228,27 +1231,26 @@ const FeasibilityAnalysis = () => {
                   <li><strong>Curtailment:</strong> Energia renovável desperdiçada</li>
                   <li><strong>Operação:</strong> 20-100% quando energia disponível nessa faixa</li>
                 </ul>
+                </Card>
+                </AccordionContent>
               </Card>
-            </Card>
-          </motion.div>
-        )}
+            </AccordionItem>
+          )}
 
-        {/* Resumo Financeiro Baseado em Dados Reais */}
-        {simulationResults.oneYear && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-8"
-          >
-            <Card className="p-6 bg-white/80 backdrop-blur-sm border-emerald-200">
-              <div className="flex items-center space-x-3 mb-6">
-                <TrendingUp className="w-6 h-6 text-emerald-600" />
-                <h2 className="text-2xl font-bold text-slate-900">Resumo Financeiro e Viabilidade Econômica</h2>
-                <Badge className="bg-green-100 text-green-800 border-green-300">
-                  ✓ Baseado em Simulação Real
-                </Badge>
-              </div>
+          {/* Resumo Financeiro */}
+          {simulationResults.oneYear && (
+            <AccordionItem value="financeiro" className="border-none">
+              <Card className="bg-white/80 backdrop-blur-sm border-emerald-200 overflow-hidden">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-emerald-50/50 transition-colors">
+                  <div className="flex items-center space-x-3 w-full">
+                    <TrendingUp className="w-6 h-6 text-emerald-600" />
+                    <h2 className="text-2xl font-bold text-slate-900">Resumo Financeiro e Viabilidade Econômica</h2>
+                    <Badge className="bg-green-100 text-green-800 border-green-300 ml-auto">
+                      ✓ Baseado em Simulação Real
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
 
               <Tabs defaultValue="1" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -1299,9 +1301,9 @@ const FeasibilityAnalysis = () => {
                         <span className="text-sm font-medium text-slate-700">Receita Potencial</span>
                       </div>
                       <p className="text-3xl font-bold text-slate-900">
-                        R$ {(simulationResults.oneYear.h2Production * 25).toFixed(0)}k
+                        R$ {(simulationResults.oneYear.h2Production * 25).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-xs text-slate-600 mt-1">Anual (R$ 25/kg H₂)</p>
+                      <p className="text-xs text-slate-600 mt-1">Por ano (R$ 25/kg H₂)</p>
                     </Card>
                   </div>
 
@@ -1376,9 +1378,9 @@ const FeasibilityAnalysis = () => {
                         <span className="text-sm font-medium text-slate-700">Receita Potencial</span>
                       </div>
                       <p className="text-3xl font-bold text-slate-900">
-                        R$ {(simulationResults.threeYears!.h2Production * 25).toFixed(0)}k
+                        R$ {(simulationResults.threeYears!.h2Production * 25).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-xs text-slate-600 mt-1">Anual (R$ 25/kg H₂)</p>
+                      <p className="text-xs text-slate-600 mt-1">Por ano (R$ 25/kg H₂)</p>
                     </Card>
                   </div>
 
@@ -1453,9 +1455,9 @@ const FeasibilityAnalysis = () => {
                         <span className="text-sm font-medium text-slate-700">Receita Potencial</span>
                       </div>
                       <p className="text-3xl font-bold text-slate-900">
-                        R$ {(simulationResults.fiveYears!.h2Production * 25).toFixed(0)}k
+                        R$ {(simulationResults.fiveYears!.h2Production * 25).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-xs text-slate-600 mt-1">Anual (R$ 25/kg H₂)</p>
+                      <p className="text-xs text-slate-600 mt-1">Por ano (R$ 25/kg H₂)</p>
                     </Card>
                   </div>
 
@@ -1487,23 +1489,22 @@ const FeasibilityAnalysis = () => {
                     </p>
                   </Card>
                 </TabsContent>
-              </Tabs>
-            </Card>
-          </motion.div>
-        )}
+                </Tabs>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          )}
 
-        {/* Análise Ambiental */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8"
-        >
-          <Card className="p-6 bg-white/80 backdrop-blur-sm border-emerald-200">
-            <div className="flex items-center space-x-3 mb-6">
-              <TreePine className="w-6 h-6 text-emerald-600" />
-              <h2 className="text-2xl font-bold text-slate-900">Análise Ambiental</h2>
-            </div>
+          {/* Análise Ambiental */}
+          <AccordionItem value="ambiental" className="border-none">
+            <Card className="bg-white/80 backdrop-blur-sm border-emerald-200 overflow-hidden">
+              <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-emerald-50/50 transition-colors">
+                <div className="flex items-center space-x-3 w-full">
+                  <TreePine className="w-6 h-6 text-emerald-600" />
+                  <h2 className="text-2xl font-bold text-slate-900">Análise Ambiental</h2>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
               {environmentalFactors.map((factor, index) => (
@@ -1529,26 +1530,25 @@ const FeasibilityAnalysis = () => {
                   </Card>
                 </motion.div>
               ))}
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Viabilidade do Projeto - Baseada em Dados Reais */}
-        {simulationResults.oneYear && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mb-8"
-          >
-            <Card className="p-6 bg-white/80 backdrop-blur-sm border-emerald-200">
-              <div className="flex items-center space-x-3 mb-6">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                <h2 className="text-2xl font-bold text-slate-900">Viabilidade do Projeto</h2>
-                <Badge className="bg-green-100 text-green-800 border-green-300">
-                  ✓ Análise com Dados Reais
-                </Badge>
               </div>
+              </AccordionContent>
+            </Card>
+          </AccordionItem>
+
+          {/* Viabilidade do Projeto */}
+          {simulationResults.oneYear && (
+            <AccordionItem value="viabilidade" className="border-none">
+              <Card className="bg-white/80 backdrop-blur-sm border-emerald-200 overflow-hidden">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-emerald-50/50 transition-colors">
+                  <div className="flex items-center space-x-3 w-full">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    <h2 className="text-2xl font-bold text-slate-900">Viabilidade do Projeto</h2>
+                    <Badge className="bg-green-100 text-green-800 border-green-300 ml-auto">
+                      ✓ Análise com Dados Reais
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
 
               <Tabs defaultValue="1" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -1831,25 +1831,25 @@ const FeasibilityAnalysis = () => {
                   </div>
                 </TabsContent>
               </Tabs>
+              </AccordionContent>
             </Card>
-          </motion.div>
+          </AccordionItem>
         )}
 
-        {/* Recomendações Baseadas em Dados Reais */}
-        {simulationResults.oneYear && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Card className="p-6 bg-white/80 backdrop-blur-sm border-emerald-200">
-              <div className="flex items-center space-x-3 mb-6">
-                <FileText className="w-6 h-6 text-emerald-600" />
-                <h2 className="text-2xl font-bold text-slate-900">Recomendações Técnicas e Estratégicas</h2>
-                <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                  Baseadas na Simulação
-                </Badge>
-              </div>
+          {/* Recomendações Técnicas */}
+          {simulationResults.oneYear && (
+            <AccordionItem value="recomendacoes" className="border-none">
+              <Card className="bg-white/80 backdrop-blur-sm border-emerald-200 overflow-hidden">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-emerald-50/50 transition-colors">
+                  <div className="flex items-center space-x-3 w-full">
+                    <FileText className="w-6 h-6 text-emerald-600" />
+                    <h2 className="text-2xl font-bold text-slate-900">Recomendações Técnicas e Estratégicas</h2>
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-300 ml-auto">
+                      Baseadas na Simulação
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
 
               <div className="space-y-3">
                 {/* Recomendações dinâmicas baseadas nos resultados */}
@@ -2021,10 +2021,12 @@ const FeasibilityAnalysis = () => {
                     </div>
                   </motion.div>
                 ))}
-              </div>
-            </Card>
-          </motion.div>
-        )}
+                </div>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          )}
+        </Accordion>
         </>
         )}
         </div>
