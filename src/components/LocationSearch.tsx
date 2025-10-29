@@ -15,6 +15,7 @@ interface Municipality {
   nome: string;
   latitude: number;
   longitude: number;
+  codigo_uf: string;
 }
 
 interface LocationSearchProps {
@@ -22,9 +23,24 @@ interface LocationSearchProps {
   initialLocation?: Location;
 }
 
+// Mapeamento de código UF para sigla
+const UF_MAP: Record<string, string> = {
+  '11': 'RO', '12': 'AC', '13': 'AM', '14': 'RR', '15': 'PA', '16': 'AP', '17': 'TO',
+  '21': 'MA', '22': 'PI', '23': 'CE', '24': 'RN', '25': 'PB', '26': 'PE', '27': 'AL',
+  '28': 'SE', '29': 'BA', '31': 'MG', '32': 'ES', '33': 'RJ', '35': 'SP', '41': 'PR',
+  '42': 'SC', '43': 'RS', '50': 'MS', '51': 'MT', '52': 'GO', '53': 'DF'
+};
+
+interface SuggestionItem {
+  name: string;
+  displayName: string;
+  lat: number;
+  lng: number;
+}
+
 const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchProps) => {
   const [searchTerm, setSearchTerm] = useState(initialLocation?.name || '');
-  const [suggestions, setSuggestions] = useState<Location[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -42,8 +58,8 @@ const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchPro
       const supabaseClient = supabase as any;
       const { data, error } = await supabaseClient
         .from('municipalities')
-        .select('nome, latitude, longitude')
-        .ilike('nome', `%${term}%`)
+        .select('nome, latitude, longitude, codigo_uf')
+        .ilike('nome', `${term}%`) // Busca pelo início do nome (mais assertivo)
         .order('nome')
         .limit(10);
 
@@ -60,11 +76,15 @@ const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchPro
 
       if (data) {
         const municipalities = data as Municipality[];
-        const locations: Location[] = municipalities.map(m => ({
-          lat: m.latitude,
-          lng: m.longitude,
-          name: m.nome
-        }));
+        const locations: SuggestionItem[] = municipalities.map(m => {
+          const uf = UF_MAP[m.codigo_uf] || m.codigo_uf;
+          return {
+            name: m.nome,
+            displayName: `${m.nome} - ${uf}`,
+            lat: m.latitude,
+            lng: m.longitude
+          };
+        });
         setSuggestions(locations);
       }
     } catch (error) {
@@ -89,10 +109,14 @@ const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchPro
     setIsSearching(true);
   };
 
-  const handleSelectLocation = (location: Location) => {
-    setSearchTerm(location.name);
+  const handleSelectLocation = (location: SuggestionItem) => {
+    setSearchTerm(location.displayName);
     setIsSearching(false);
-    onLocationSelect(location);
+    onLocationSelect({
+      lat: location.lat,
+      lng: location.lng,
+      name: location.displayName
+    });
   };
 
   return (
@@ -105,12 +129,12 @@ const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchPro
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={() => setIsSearching(true)}
-          className="pl-10 pr-4 h-12 text-base border-emerald-200 focus:border-emerald-500"
+          className="pl-10 pr-4 h-12 text-base border-emerald-200 focus:border-emerald-500 bg-white"
         />
       </div>
 
       {isSearching && isLoading && (
-        <Card className="absolute top-full mt-2 w-full z-50 shadow-lg border-emerald-200">
+        <Card className="absolute top-full mt-2 w-full z-[100] shadow-lg border-emerald-200 bg-white">
           <div className="p-4 text-center text-slate-600">
             Buscando...
           </div>
@@ -118,16 +142,18 @@ const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchPro
       )}
 
       {isSearching && !isLoading && suggestions.length > 0 && (
-        <Card className="absolute top-full mt-2 w-full max-h-64 overflow-y-auto z-50 shadow-lg border-emerald-200">
+        <Card className="absolute top-full mt-2 w-full max-h-80 overflow-y-auto z-[100] shadow-lg border-emerald-200 bg-white">
           <div className="p-2">
             {suggestions.map((location, index) => (
               <button
                 key={index}
                 onClick={() => handleSelectLocation(location)}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors flex items-center space-x-2"
+                className="w-full text-left px-3 py-3 rounded-lg hover:bg-emerald-50 transition-colors flex items-center space-x-3 group"
               >
-                <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span className="text-slate-700">{location.name}</span>
+                <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0 group-hover:text-emerald-700" />
+                <span className="text-slate-700 group-hover:text-slate-900 font-medium">
+                  {location.displayName}
+                </span>
               </button>
             ))}
           </div>
@@ -135,7 +161,7 @@ const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchPro
       )}
 
       {isSearching && !isLoading && searchTerm.length >= 2 && suggestions.length === 0 && (
-        <Card className="absolute top-full mt-2 w-full z-50 shadow-lg border-emerald-200">
+        <Card className="absolute top-full mt-2 w-full z-[100] shadow-lg border-emerald-200 bg-white">
           <div className="p-4 text-center text-slate-600">
             Nenhuma localidade encontrada
           </div>
