@@ -41,8 +41,9 @@ Deno.serve(async (req) => {
     console.log(`Processing SQL content... (${sqlContent.length} characters)`);
     
     // Extract the VALUES section from the single INSERT statement
-    // The SQL format is: INSERT INTO municipios VALUES\n(row1),\n(row2),...\n(rowN);
-    const valuesMatch = sqlContent.match(/INSERT\s+INTO\s+municipios\s+VALUES\s*([\s\S]+?);/i);
+    // The SQL format is: INSERT INTO municipios VALUES\n(row1),\n(row2),...\n(rowN) OR (rowN);
+    // Note: The file may or may not end with semicolon
+    const valuesMatch = sqlContent.match(/INSERT\s+INTO\s+municipios\s+VALUES\s*([\s\S]+?)(?:;|\s*$)/i);
     
     if (!valuesMatch) {
       console.error('Could not find INSERT statement. SQL preview:', sqlContent.substring(0, 500));
