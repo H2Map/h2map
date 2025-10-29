@@ -12,13 +12,11 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-emerald-100">
+      <nav className=" fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-emerald-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-[80px]">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                <Droplets className="w-5 h-5 text-white" />
-              </div>
+              <img className="w-[100px] h-[80px]" src="/public/logoh2mapstrans.svg"/>             
               <span className="text-xl font-bold text-slate-900">H2maps</span>
             </Link>
 
