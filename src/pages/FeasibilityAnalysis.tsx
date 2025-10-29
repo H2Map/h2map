@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
   Sun, 
   Wind, 
@@ -13,11 +14,13 @@ import {
   Zap,
   BarChart3,
   FileText,
-  Loader2
+  Loader2,
+  Database
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import Navigation from '@/components/Navigation';
 import LocationSearch from '@/components/LocationSearch';
 import { useLocationStore } from '@/store/locationStore';
@@ -705,11 +708,20 @@ const FeasibilityAnalysis = () => {
             {/* Location Search */}
             <Card className="p-6 bg-white/80 backdrop-blur-sm border-emerald-200">
               <div className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="flex-1">
+                <div className="flex-1 space-y-2">
                   <LocationSearch
                     onLocationSelect={handleLocationSelect}
                     initialLocation={localLocation}
                   />
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Database className="w-4 h-4" />
+                    <span>Não encontrou sua cidade?</span>
+                    <Link to="/import-municipalities">
+                      <Button variant="link" size="sm" className="h-auto p-0 text-emerald-600 hover:text-emerald-700">
+                        Importar base completa de municípios
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
