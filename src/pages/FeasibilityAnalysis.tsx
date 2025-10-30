@@ -156,17 +156,16 @@ const FeasibilityAnalysis = () => {
 
   const fetchWeatherData = async (lat: number, lng: number) => {
     try {
-      // NASA POWER only has historical data, not future predictions
-      // Use data from 2 years ago to 1 year ago (365 days of historical data)
+      // OpenWeatherMap historical data from last year
       const endDate = subDays(new Date(), 1); // Yesterday
       const startDate = subDays(endDate, 365); // 1 year before yesterday
       
       const startDateStr = format(startDate, 'yyyy-MM-dd');
       const endDateStr = format(endDate, 'yyyy-MM-dd');
       
-      console.log('Fetching NASA POWER data for location:', { lat, lng, startDateStr, endDateStr });
+      console.log('Fetching OpenWeatherMap data for location:', { lat, lng, startDateStr, endDateStr });
       
-      const { data, error } = await supabase.functions.invoke('fetch-nasa-power-data', {
+      const { data, error } = await supabase.functions.invoke('fetch-weather-data', {
         body: {
           lat,
           lon: lng,
@@ -176,28 +175,39 @@ const FeasibilityAnalysis = () => {
       });
 
       if (error) {
-        console.error('Error fetching NASA POWER data:', error);
-        toast.warning('Não foi possível carregar dados da NASA POWER. Usando estimativas regionais.');
+        console.error('Error fetching OpenWeatherMap data:', error);
+        toast.warning('Não foi possível carregar dados do OpenWeatherMap. Usando estimativas regionais.');
         return;
       }
 
       if (data?.averages) {
         const avgData = data.averages;
         
-        console.log('NASA POWER data received:', avgData);
+        console.log('OpenWeatherMap data received:', avgData);
+        
+        // Convert solar irradiance from cloud cover to estimated kWh/m²/day
+        // Cloud cover: 0% = ~5.5 kWh/m²/day, 100% = ~1.5 kWh/m²/day
+        const estimatedSolarIrradiance = 5.5 - (avgData.cloudCover / 100) * 4;
         
         setWeatherData({
           avgTemperature: avgData.temperature,
-          avgSolarIrradiance: avgData.solarIrradiance, // Already in kWh/m²/day
-          avgWindSpeed: avgData.windSpeed,
+          avgSolarIrradiance: estimatedSolarIrradiance,
+          avgWindSpeed: avgData.windSpeed, // OpenWeatherMap wind speed in m/s
           avgHumidity: avgData.humidity,
-          avgPressure: 1013, // Standard atmospheric pressure (NASA POWER doesn't provide this)
+          avgPressure: avgData.pressure,
           totalRainfall: avgData.totalPrecipitation,
           dataPoints: data.daysAnalyzed,
-          dailyData: data.dailyData, // Store daily profile for simulation
+          dailyData: data.dailyData?.map((day: any) => ({
+            date: day.date,
+            solarIrradiance: 5.5 - ((day.cloud_cover?.afternoon || 50) / 100) * 4,
+            windSpeed: day.wind?.max?.speed || avgData.windSpeed,
+            temperature: day.temperature?.afternoon || avgData.temperature,
+            humidity: day.humidity?.afternoon || avgData.humidity,
+            precipitation: day.precipitation?.total || 0,
+          })),
         });
 
-        toast.success(`✅ Dados reais da NASA POWER: ${data.daysAnalyzed} dias analisados`);
+        toast.success(`✅ Dados reais do OpenWeatherMap: ${data.daysAnalyzed} dias analisados`);
         
         // Run simulation with real data
         if (data.dailyData && data.dailyData.length > 0) {
