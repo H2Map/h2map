@@ -20,7 +20,9 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-18">
           <Link to="/" className="flex items-center space-x-2 group">
-            <img className='h-[90px] w-[90px]' src="/Logo.svg" />
+            <div className="h-[90px] w-[90px] bg-gradient-to-br from-emerald-50/80 via-teal-50/80 to-cyan-50/80 rounded-lg flex items-center justify-center p-2">
+              <img className='h-full w-full object-contain' src="/Logo.svg" />
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
