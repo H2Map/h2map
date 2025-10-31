@@ -10,7 +10,8 @@ const Navigation = () => {
   const navItems = [
     { path: "/feasibility", label: "Análise de Viabilidade", icon: BarChart3 },
     { path: "/statistics", label: "Estatísticas", icon: LineChart },
-    { path: "/dashboard", label: "Mapa", icon: Map }
+    { path: "/dashboard", label: "Mapa", icon: Map },
+    {path: "/previsao" , label: "Previsão do Tempo"}
   ];
 
   const isActive = (path: string) => location.pathname === path;

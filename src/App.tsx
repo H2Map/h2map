@@ -22,6 +22,7 @@ function App() {
     <MapGridAnimated />
   </div>
 } />
+<Route path="/PrevisaoTempo" element={<Dashboard/>}/>
 
         <Route path="*" element={<NotFound />} />
       </Routes>
