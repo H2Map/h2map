@@ -1,6 +1,8 @@
 import { MapPin } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Map from '@/components/MapGridAnimated';
+import WeatherForecast from '@/components/WeatherForecast';
+import LocationSearch from '@/components/LocationSearch';
 import { useLocationStore } from '@/store/locationStore';
 import { useState, useEffect } from 'react';
 
@@ -24,14 +26,32 @@ export default function Dashboard() {
   return (
     <>
       <Navigation />
+      
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 pt-16 w-auto ">
+        <div className="max-w-7xl mx-auto p-8 space-y-6 flex ">
+          {/* Location Search */}
+          <div className="bg-white rounded-xl shadow-lg p-3 h-[400px] flex-1 mr-[50px] max-w-[300px] mt-[25px]">
+            <h3 className="text-md font-semibold text-slate-900 mb-4">Selecionar Localização</h3>
+            <LocationSearch
+              onLocationSelect={handleLocationSelect}
+              initialLocation={localLocation}
+            />
+            <div className='text-center mt-[20px] font-bold'><h2>Favoritos</h2></div>
+          </div>
+
+          {/* Weather Forecast */}
+         <div className=''> <WeatherForecast location={localLocation} /></div>
+
+        </div>
           {/* Map */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="bg-white rounded-xl shadow-lg p-8 m-[200px] mt-3">
             <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
               <MapPin className="w-6 h-6 text-emerald-600 text-center" />
               Mapa Interativo
             </h2>
             <Map />
           </div>
+      </div>
     </>
   );
 }

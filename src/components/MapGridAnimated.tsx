@@ -24,7 +24,7 @@ const MapGridAnimated = () => {
   };
 
   return (
-    <div className="space-y-4 m-1/2">
+    <div className="space-y-4 m-1/2 ">
       <div className="flex gap-4">
         <button
           onClick={addMap}

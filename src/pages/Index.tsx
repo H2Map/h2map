@@ -48,7 +48,7 @@ export default function Index() {
                 Conservação
               </a>
               <Link
-                to="/dashboard"
+                to="/feasibility"
                 className="bg-[#0da9ff] opacity-60 text-white font-medium px-4 py-2 rounded-lg hover:bg-[#73cb94] transition-colors"
               >
                 Demonstração

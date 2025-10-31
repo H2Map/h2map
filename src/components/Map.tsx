@@ -62,9 +62,9 @@ const Map = ({ initialLocation }: { initialLocation?: Location }) => {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3 }}
-      className="w-full h-full rounded-lg border p-4 space-y-4"
+      className="w-full h-full rounded-lg border p-4 space-y-4 "
     >
-      <div className="grid grid-cols-1 gap-6 mb-6">
+      <div className="grid grid-cols-1 gap-6 mb-6 ">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
             Localização
