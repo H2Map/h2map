@@ -122,14 +122,14 @@ const LocationSearch = ({ onLocationSelect, initialLocation }: LocationSearchPro
   return (
     <div className="relative w-full">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 " />
         <Input
-          type="text"
+          type="text opacity-50"
           placeholder="Digite o nome da cidade..."
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={() => setIsSearching(true)}
-          className="pl-10 pr-4 h-12 text-base border-emerald-200 focus:border-emerald-500 bg-white"
+          className="pl-10 pr-4 h-12 text-base border-emerald-200 focus:border-emerald-500 bg-white text-opacity-50"
         />
       </div>
 

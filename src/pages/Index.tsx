@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import LocationSearch from '@/components/LocationSearch';
+
 import {
   MapPin,
   Wind,
@@ -52,7 +54,7 @@ export default function Index() {
                 Demonstração
               </Link>
             </div>
-
+            
             <button
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -118,19 +120,15 @@ export default function Index() {
                 conservação da fauna e flora para desenvolvimento sustentável.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div>
+                  <LocationSearch/>
+                  </div>
+                  
                 <Link
                   to="/dashboard"
                   className="bg-[#0da9ff] opacity-60  text-white px-6 py-3 rounded-lg hover:bg-[#73cb94]  transition-colors flex items-center justify-center space-x-2"
                 >
                   <span>Começar Análise</span>
-                  <ChevronRight className="w-5 h-5" />
-                </Link>
-                <Link
-                  to="/feasibility"
-                  className="bg-[#0da9ff] opacity-60  text-[white] px-6 py-3 rounded-lg hover:bg-[#73cb94] transition-colors flex items-center justify-center space-x-2 border border-[#0da9ff]"
-                >
-                  <BarChart3 className="w-5 h-5" />
-                  <span>Análise de Viabilidade</span>
                   <ChevronRight className="w-5 h-5" />
                 </Link>
               </div>
@@ -469,6 +467,7 @@ export default function Index() {
             </p>
           </div>
         </div>
+        
       </footer>
     </div>
   );
