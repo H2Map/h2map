@@ -334,7 +334,7 @@ export default function Index() {
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="flex items-start space-x-4 bg-white p-4 rounded-lg shadow-sm border border-emerald-100"
+                  className="flex items-start space-x-4 bg-white p-4 rounded-lg shadow-sm border border-emerald-100 hover:shadow-xl transition-all hover:-translate-y-1"
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
                     {item.icon}
@@ -379,7 +379,7 @@ export default function Index() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className={`bg-gradient-to-br ${stat.color} rounded-xl p-6 text-white shadow-lg`}
+                  className={`bg-gradient-to-br ${stat.color} rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1`}
                 >
                   <div className="text-4xl font-bold mb-2">{stat.number}</div>
                   <div className="text-white/90 font-medium">{stat.label}</div>
