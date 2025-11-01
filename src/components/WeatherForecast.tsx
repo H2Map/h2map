@@ -249,7 +249,9 @@ const WeatherForecastComponent = ({ location }: WeatherForecastProps) => {
             >
               <div className="text-center mb-2">
                 <p className="text-xs font-semibold text-slate-900">{day.dayName}</p>
-                <p className="text-xs text-slate-500">{format(new Date(day.date), 'dd/MM')}</p>
+                <p className="text-xs text-slate-500">
+                  {day.date.split('-').slice(1).reverse().join('/')}
+                </p>
               </div>
               
               <div className="flex justify-center mb-2">
