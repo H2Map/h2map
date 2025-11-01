@@ -46,43 +46,58 @@ export default function Dashboard() {
     <>
       <Navigation />
       
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 pt-16 w-auto">
-        <div className="max-w-7xl mx-auto p-8 space-y-6 flex">
-          {/* Location Search */}
-          <div className="bg-white rounded-xl shadow-lg p-4 h-fit flex-1 mr-[50px] max-w-[300px] mt-[25px]">
-            <h3 className="text-md font-semibold text-slate-900 mb-4">Selecionar Localização</h3>
-            <LocationSearch
-              onLocationSelect={handleLocationSelect}
-              initialLocation={localLocation}
-            />
-            
-            <Button
-              onClick={handleAddFavorite}
-              variant="outline"
-              className="w-full mt-4 border-amber-300 hover:bg-amber-50 hover:border-amber-400"
-            >
-              <Star className={`w-4 h-4 mr-2 ${isFavorite(localLocation.name) ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}`} />
-              {isFavorite(localLocation.name) ? 'Favoritado' : 'Adicionar aos Favoritos'}
-            </Button>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 pt-16">
+        <div className="container mx-auto px-4 py-6 max-w-7xl">
+          {/* Top Section: Location Search + Weather Forecast */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+            {/* Location Search & Favorites */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-md p-5 sticky top-20">
+                <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-emerald-600" />
+                  Localização
+                </h3>
+                
+                <LocationSearch
+                  onLocationSelect={handleLocationSelect}
+                  initialLocation={localLocation}
+                />
+                
+                <Button
+                  onClick={handleAddFavorite}
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-4 border-amber-300 hover:bg-amber-50 hover:border-amber-400 transition-colors"
+                >
+                  <Star className={`w-4 h-4 mr-2 transition-all ${isFavorite(localLocation.name) ? 'fill-amber-500 text-amber-500' : 'text-amber-500'}`} />
+                  {isFavorite(localLocation.name) ? 'Favoritado' : 'Adicionar Favorito'}
+                </Button>
 
-            <div className="border-t border-slate-200 mt-4 pt-4">
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">Favoritos</h3>
-              <FavoritesList onLocationSelect={handleLocationSelect} />
+                <div className="border-t border-slate-200 mt-5 pt-5">
+                  <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    Favoritos
+                  </h3>
+                  <FavoritesList onLocationSelect={handleLocationSelect} />
+                </div>
+              </div>
+            </div>
+
+            {/* Weather Forecast */}
+            <div className="lg:col-span-3">
+              <WeatherForecast location={localLocation} />
             </div>
           </div>
 
-          {/* Weather Forecast */}
-         <div className=''> <WeatherForecast location={localLocation} /></div>
-
-        </div>
-          {/* Map */}
-          <div className="bg-white rounded-xl shadow-lg p-8 m-[200px] mt-3">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <MapPin className="w-6 h-6 text-emerald-600 text-center" />
+          {/* Map Section */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <MapPin className="w-6 h-6 text-emerald-600" />
               Mapa Interativo
             </h2>
             <Map />
           </div>
+        </div>
       </div>
     </>
   );
