@@ -75,6 +75,9 @@ serve(async (req) => {
     const currentData = await currentResponse.json();
     const forecastData = await forecastResponse.json();
 
+    console.log('Open-Meteo forecast dates:', forecastData.daily.time);
+    console.log('Current date from API:', currentData.current.time);
+
     // Map weather code for current conditions
     const currentWeather = mapWeatherCode(currentData.current.weather_code);
     
@@ -83,12 +86,42 @@ serve(async (req) => {
     const sunriseTime = new Date(currentData.daily.sunrise[todayIndex]).getTime() / 1000;
     const sunsetTime = new Date(currentData.daily.sunset[todayIndex]).getTime() / 1000;
 
+    // Get today's date in Brazil timezone (GMT-3)
+    const now = new Date();
+    const brazilOffset = -3 * 60; // GMT-3 in minutes
+    const localOffset = now.getTimezoneOffset();
+    const brazilTime = new Date(now.getTime() + (localOffset + brazilOffset) * 60000);
+    const todayStr = brazilTime.toISOString().split('T')[0];
+    
+    console.log('Today in Brazil (GMT-3):', todayStr);
+    console.log('First date from API:', forecastData.daily.time[0]);
+
     // Process forecast data - create 5-day forecast (starting from tomorrow, day +1)
     const dailyForecast: any[] = [];
     const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-    // Start from index 1 (tomorrow) to index 5 (day +5)
-    for (let i = 1; i <= Math.min(5, forecastData.daily.time.length - 1); i++) {
+    // Find the index of tomorrow's date
+    let tomorrowIndex = -1;
+    const tomorrowDate = new Date(brazilTime);
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+    
+    for (let i = 0; i < forecastData.daily.time.length; i++) {
+      if (forecastData.daily.time[i] === tomorrowStr) {
+        tomorrowIndex = i;
+        break;
+      }
+    }
+    
+    console.log('Tomorrow date:', tomorrowStr, 'Index:', tomorrowIndex);
+
+    // If we can't find tomorrow, start from index 1
+    if (tomorrowIndex === -1) {
+      tomorrowIndex = 1;
+    }
+
+    // Start from tomorrow and get next 5 days
+    for (let i = tomorrowIndex; i < Math.min(tomorrowIndex + 5, forecastData.daily.time.length); i++) {
       const dateStr = forecastData.daily.time[i];
       // Parse date in UTC to avoid timezone issues
       const [year, month, day] = dateStr.split('-').map(Number);
@@ -97,7 +130,7 @@ serve(async (req) => {
       
       // Day name: "Amanhã" for first day, then day of week
       let dayName = '';
-      if (i === 1) {
+      if (i === tomorrowIndex) {
         dayName = 'Amanhã';
       } else {
         dayName = dayNames[date.getUTCDay()];
@@ -105,7 +138,7 @@ serve(async (req) => {
 
       const precipitationSum = forecastData.daily.precipitation_sum[i];
       
-      console.log(`Day ${i} (${dateStr}, ${dayName}): Precipitation = ${precipitationSum} mm, Day of week = ${date.getUTCDay()}`);
+      console.log(`Index ${i} - Date: ${dateStr}, Day: ${dayName}, Day of week: ${date.getUTCDay()}, Precipitation: ${precipitationSum} mm`);
 
       dailyForecast.push({
         date: dateStr,
