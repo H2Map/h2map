@@ -5,6 +5,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Map Open-Meteo weather codes to OpenWeatherMap-style icon codes
+const mapWeatherCode = (code: number): { main: string; description: string; icon: string } => {
+  const weatherMap: Record<number, { main: string; description: string; icon: string }> = {
+    0: { main: 'Clear', description: 'céu limpo', icon: '01d' },
+    1: { main: 'Clear', description: 'principalmente limpo', icon: '01d' },
+    2: { main: 'Clouds', description: 'parcialmente nublado', icon: '02d' },
+    3: { main: 'Clouds', description: 'nublado', icon: '03d' },
+    45: { main: 'Fog', description: 'névoa', icon: '50d' },
+    48: { main: 'Fog', description: 'névoa com geada', icon: '50d' },
+    51: { main: 'Drizzle', description: 'garoa leve', icon: '09d' },
+    53: { main: 'Drizzle', description: 'garoa moderada', icon: '09d' },
+    55: { main: 'Drizzle', description: 'garoa forte', icon: '09d' },
+    61: { main: 'Rain', description: 'chuva leve', icon: '10d' },
+    63: { main: 'Rain', description: 'chuva moderada', icon: '10d' },
+    65: { main: 'Rain', description: 'chuva forte', icon: '10d' },
+    71: { main: 'Snow', description: 'neve leve', icon: '13d' },
+    73: { main: 'Snow', description: 'neve moderada', icon: '13d' },
+    75: { main: 'Snow', description: 'neve forte', icon: '13d' },
+    77: { main: 'Snow', description: 'grãos de neve', icon: '13d' },
+    80: { main: 'Rain', description: 'pancadas de chuva leves', icon: '10d' },
+    81: { main: 'Rain', description: 'pancadas de chuva moderadas', icon: '10d' },
+    82: { main: 'Rain', description: 'pancadas de chuva fortes', icon: '10d' },
+    85: { main: 'Snow', description: 'pancadas de neve leves', icon: '13d' },
+    86: { main: 'Snow', description: 'pancadas de neve fortes', icon: '13d' },
+    95: { main: 'Thunderstorm', description: 'trovoada', icon: '11d' },
+    96: { main: 'Thunderstorm', description: 'trovoada com granizo leve', icon: '11d' },
+    99: { main: 'Thunderstorm', description: 'trovoada com granizo forte', icon: '11d' },
+  };
+  return weatherMap[code] || { main: 'Unknown', description: 'desconhecido', icon: '02d' };
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,136 +46,105 @@ serve(async (req) => {
     
     console.log('Fetching weather forecast for:', { lat, lon });
 
-    const apiKey = Deno.env.get('OPENWEATHERMAP_API_KEY');
-    if (!apiKey) {
-      throw new Error('OPENWEATHERMAP_API_KEY not configured');
-    }
+    // Fetch weather data from Open-Meteo API (free, no API key needed)
+    const currentParams = new URLSearchParams({
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover',
+      daily: 'sunrise,sunset',
+      timezone: 'auto',
+    });
 
-    // Fetch 5-day forecast with 3-hour intervals
-    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`;
-    
-    const forecastResponse = await fetch(forecastUrl);
-    
-    if (!forecastResponse.ok) {
-      throw new Error(`Forecast API request failed: ${forecastResponse.status}`);
-    }
+    const forecastParams = new URLSearchParams({
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,relative_humidity_2m_mean,surface_pressure_mean',
+      timezone: 'auto',
+    });
 
-    const forecastData = await forecastResponse.json();
+    const [currentResponse, forecastResponse] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?${currentParams}`),
+      fetch(`https://api.open-meteo.com/v1/forecast?${forecastParams}`),
+    ]);
 
-    // Fetch current weather for today's data
-    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`;
-    
-    const currentResponse = await fetch(currentUrl);
-    
-    if (!currentResponse.ok) {
-      throw new Error(`Current weather API request failed: ${currentResponse.status}`);
+    if (!currentResponse.ok || !forecastResponse.ok) {
+      throw new Error('Open-Meteo API request failed');
     }
 
     const currentData = await currentResponse.json();
+    const forecastData = await forecastResponse.json();
 
-    // Process forecast data - group by day
+    // Map weather code for current conditions
+    const currentWeather = mapWeatherCode(currentData.current.weather_code);
+    
+    // Calculate sunrise and sunset timestamps from today's data
+    const todayIndex = 0;
+    const sunriseTime = new Date(currentData.daily.sunrise[todayIndex]).getTime() / 1000;
+    const sunsetTime = new Date(currentData.daily.sunset[todayIndex]).getTime() / 1000;
+
+    // Process forecast data - create 5-day forecast
     const dailyForecast: any[] = [];
-    const processedDates = new Set();
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-    // Get today's date at midnight (start of day)
-    const now = new Date();
-    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayDate = todayMidnight.toISOString().split('T')[0];
-
-    // Add current day (Hoje)
-    dailyForecast.push({
-      date: todayDate,
-      dayName: 'Hoje',
-      temp: {
-        min: currentData.main.temp_min,
-        max: currentData.main.temp_max,
-        avg: currentData.main.temp
-      },
-      weather: {
-        main: currentData.weather[0].main,
-        description: currentData.weather[0].description,
-        icon: currentData.weather[0].icon
-      },
-      humidity: currentData.main.humidity,
-      windSpeed: currentData.wind.speed,
-      pressure: currentData.main.pressure,
-      rainfall: currentData.rain?.['1h'] || 0,
-      clouds: currentData.clouds.all
-    });
-    processedDates.add(todayDate);
-
-    // Process forecast data - only include future dates
-    forecastData.list.forEach((item: any) => {
-      const date = new Date(item.dt * 1000);
-      const dateStr = date.toISOString().split('T')[0];
+    for (let i = 0; i < Math.min(5, forecastData.daily.time.length); i++) {
+      const date = new Date(forecastData.daily.time[i]);
+      const dateStr = forecastData.daily.time[i];
+      const weather = mapWeatherCode(forecastData.daily.weather_code[i]);
       
-      // Only process dates that are today or in the future, and we haven't processed yet
-      if (date >= todayMidnight && !processedDates.has(dateStr) && dailyForecast.length < 5) {
-        const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-        const dayName = dailyForecast.length === 1 ? 'Amanhã' : dayNames[date.getDay()];
-        
-        // Find all entries for this day
-        const dayEntries = forecastData.list.filter((entry: any) => {
-          const entryDate = new Date(entry.dt * 1000);
-          const entryDateStr = entryDate.toISOString().split('T')[0];
-          return entryDateStr === dateStr && entryDate >= todayMidnight;
-        });
-
-        if (dayEntries.length > 0) {
-          const temps = dayEntries.map((e: any) => e.main.temp);
-          const humidities = dayEntries.map((e: any) => e.main.humidity);
-          const windSpeeds = dayEntries.map((e: any) => e.wind.speed);
-          const pressures = dayEntries.map((e: any) => e.main.pressure);
-          const rainfalls = dayEntries.map((e: any) => e.rain?.['3h'] || 0);
-          const clouds = dayEntries.map((e: any) => e.clouds.all);
-
-          dailyForecast.push({
-            date: dateStr,
-            dayName,
-            temp: {
-              min: Math.min(...temps),
-              max: Math.max(...temps),
-              avg: temps.reduce((sum: number, t: number) => sum + t, 0) / temps.length
-            },
-            weather: {
-              main: item.weather[0].main,
-              description: item.weather[0].description,
-              icon: item.weather[0].icon
-            },
-            humidity: humidities.reduce((sum: number, h: number) => sum + h, 0) / humidities.length,
-            windSpeed: windSpeeds.reduce((sum: number, w: number) => sum + w, 0) / windSpeeds.length,
-            pressure: pressures.reduce((sum: number, p: number) => sum + p, 0) / pressures.length,
-            rainfall: rainfalls.reduce((sum: number, r: number) => sum + r, 0),
-            clouds: clouds.reduce((sum: number, c: number) => sum + c, 0) / clouds.length
-          });
-          processedDates.add(dateStr);
-        }
+      // Day name: "Hoje", "Amanhã", or day of week
+      let dayName = '';
+      if (i === 0) {
+        dayName = 'Hoje';
+      } else if (i === 1) {
+        dayName = 'Amanhã';
+      } else {
+        dayName = dayNames[date.getDay()];
       }
-    });
+
+      dailyForecast.push({
+        date: dateStr,
+        dayName,
+        temp: {
+          min: forecastData.daily.temperature_2m_min[i],
+          max: forecastData.daily.temperature_2m_max[i],
+          avg: (forecastData.daily.temperature_2m_min[i] + forecastData.daily.temperature_2m_max[i]) / 2
+        },
+        weather: {
+          main: weather.main,
+          description: weather.description,
+          icon: weather.icon
+        },
+        humidity: forecastData.daily.relative_humidity_2m_mean[i] || 0,
+        windSpeed: forecastData.daily.wind_speed_10m_max[i] || 0,
+        pressure: forecastData.daily.surface_pressure_mean[i] || 1013,
+        rainfall: forecastData.daily.precipitation_sum[i] || 0,
+        clouds: i === 0 ? currentData.current.cloud_cover : 0 // Only available for current day
+      });
+    }
 
     const result = {
       location: {
-        name: currentData.name,
+        name: `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`, // Open-Meteo doesn't provide location name
         lat,
         lon
       },
       current: {
-        temp: currentData.main.temp,
-        feelsLike: currentData.main.feels_like,
-        humidity: currentData.main.humidity,
-        windSpeed: currentData.wind.speed,
-        windDirection: currentData.wind.deg,
-        pressure: currentData.main.pressure,
-        visibility: currentData.visibility / 1000, // Convert to km
-        clouds: currentData.clouds.all,
+        temp: currentData.current.temperature_2m,
+        feelsLike: currentData.current.apparent_temperature,
+        humidity: currentData.current.relative_humidity_2m,
+        windSpeed: currentData.current.wind_speed_10m,
+        windDirection: currentData.current.wind_direction_10m,
+        pressure: currentData.current.surface_pressure,
+        visibility: 10, // Open-Meteo doesn't provide visibility
+        clouds: currentData.current.cloud_cover,
         weather: {
-          main: currentData.weather[0].main,
-          description: currentData.weather[0].description,
-          icon: currentData.weather[0].icon
+          main: currentWeather.main,
+          description: currentWeather.description,
+          icon: currentWeather.icon
         },
-        sunrise: currentData.sys.sunrise,
-        sunset: currentData.sys.sunset,
-        timezone: currentData.timezone
+        sunrise: sunriseTime,
+        sunset: sunsetTime,
+        timezone: 0 // Open-Meteo handles timezone internally
       },
       forecast: dailyForecast
     };
