@@ -14,7 +14,7 @@ interface AuthDialogProps {
 export default function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[480px] p-8 border-emerald-100 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="sr-only">Autenticação</DialogTitle>
         </DialogHeader>
