@@ -92,27 +92,31 @@ class WeatherService {
   }
 
   private transformNASAPowerData(nasaData: any, startDate: Date, endDate: Date): HistoricalData[] {
-    if (!nasaData || !nasaData.averages) return [];
+    if (!nasaData || !nasaData.dailyData) return [];
 
     const data: HistoricalData[] = [];
-    const currentDate = new Date(startDate);
-    const { averages } = nasaData;
+    const { dailyData } = nasaData;
 
-    // Generate daily records using NASA POWER averages with realistic variations
-    while (currentDate <= endDate) {
+    // Use real daily data from NASA POWER
+    for (const day of dailyData) {
+      // Parse date from NASA format (YYYYMMDD) to Date object
+      const year = parseInt(day.date.substring(0, 4));
+      const month = parseInt(day.date.substring(4, 6)) - 1; // JS months are 0-indexed
+      const dayOfMonth = parseInt(day.date.substring(6, 8));
+      const date = new Date(year, month, dayOfMonth);
+
       data.push({
-        date: new Date(currentDate),
-        temperature: averages.temperature + (Math.random() - 0.5) * 4, // ±2°C variation
-        humidity: averages.humidity + (Math.random() - 0.5) * 10, // ±5% variation
-        windSpeed: averages.windSpeed + (Math.random() - 0.5) * 2, // ±1 m/s variation
-        windDirection: Math.random() * 360,
+        date: date,
+        temperature: day.temperature,
+        humidity: day.humidity,
+        windSpeed: day.windSpeed,
+        windDirection: Math.random() * 360, // NASA POWER doesn't provide direction
         pressure: 1013 + (Math.random() - 0.5) * 20, // Standard pressure with variation
-        uvIndex: 5 + Math.random() * 5, // Estimate based on solar
+        uvIndex: Math.min(11, Math.max(0, day.solarIrradiance * 2)), // Estimate UV from solar
         visibility: 10, // Default visibility
-        rainfall: averages.totalPrecipitation / nasaData.daysAnalyzed + (Math.random() - 0.5) * 5, // Daily average with variation
-        solarIrradiance: averages.solarIrradiance * 1000 / 12 // Convert kWh/m²/day to W/m² (assuming 12h daylight)
+        rainfall: day.precipitation,
+        solarIrradiance: day.solarIrradiance * 1000 / 12 // Convert kWh/m²/day to W/m² (assuming 12h daylight)
       });
-      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     return data;
