@@ -39,8 +39,6 @@ import { useLocationStore } from '@/store/locationStore';
 
 // Weather API Service
 class WeatherService {
-  private apiKey: string = 'd471cb2776044a3bb7e163815252110'; // OpenWeatherMap demo key
-  private baseUrl: string = 'https://api.openweathermap.org/data/2.5';
 
   async getHistoricalWeather(lat: number, lon: number, startDate: Date, endDate: Date) {
     try {
@@ -180,11 +178,21 @@ class WeatherService {
   async getCurrentWeather(lat: number, lon: number) {
     try {
       const response = await fetch(
-        `${this.baseUrl}/weather?lat=${lat}&lon=${lon}&appid=${this.apiKey}&units=metric&lang=pt_br`
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-openweathermap-current`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ lat, lon }),
+        }
       );
+      
       if (!response.ok) {
         throw new Error('Weather API request failed');
       }
+      
       return await response.json();
     } catch (error) {
       console.error('Error fetching weather data:', error);
