@@ -48,9 +48,9 @@ export default function Dashboard() {
       
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 pt-16">
         <div className="container mx-auto px-4 py-6 max-w-7xl">
-          {/* Top Section: Location Search + Weather Forecast */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-            {/* Location Search & Favorites */}
+          {/* Layout: Sidebar (Search + Favorites) | Main Content (Weather + Map) */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar: Location Search & Favorites */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-md p-5 sticky top-20">
                 <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -83,19 +83,20 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Weather Forecast */}
-            <div className="lg:col-span-3">
+            {/* Right Content: Weather Forecast + Map */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Weather Forecast */}
               <WeatherForecast location={localLocation} />
-            </div>
-          </div>
 
-          {/* Map Section */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <MapPin className="w-6 h-6 text-emerald-600" />
-              Mapa Interativo
-            </h2>
-            <Map initialLocation={localLocation} />
+              {/* Map Section */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                  <MapPin className="w-6 h-6 text-emerald-600" />
+                  Mapa Interativo
+                </h2>
+                <Map initialLocation={localLocation} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
