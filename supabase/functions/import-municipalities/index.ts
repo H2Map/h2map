@@ -1,9 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.1';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema with size limits
+const requestSchema = z.object({
+  sqlContent: z.string()
+    .min(1, 'SQL content cannot be empty')
+    .max(10 * 1024 * 1024, 'SQL content cannot exceed 10MB')
+});
 
 interface Municipality {
   codigo_ibge: string;
@@ -23,22 +31,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const requestBody = await req.json();
+    // Verify authentication - this function modifies database
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Validate input
+    const body = await req.json();
+    const validatedData = requestSchema.parse(body);
+    const { sqlContent } = validatedData;
+    
     console.log('Starting municipalities import...');
-    console.log('Request received with sqlContent');
+    console.log(`Processing SQL content... (${sqlContent.length} characters)`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { sqlContent } = requestBody;
-    
-    if (!sqlContent || typeof sqlContent !== 'string') {
-      console.error('Invalid request: sqlContent is missing or not a string');
-      throw new Error('SQL content is required');
-    }
-
-    console.log(`Processing SQL content... (${sqlContent.length} characters)`);
     
     // Extract the VALUES section from the single INSERT statement
     // The SQL format is: INSERT INTO municipios VALUES\n(row1),\n(row2),...\n(rowN) OR (rowN);
@@ -116,15 +128,25 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Import error:', error);
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: error.errors
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      );
+    }
     
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorDetails = error instanceof Error ? error.toString() : String(error);
+    console.error('Import error:', error);
     
     return new Response(
       JSON.stringify({ 
-        error: errorMessage,
-        details: errorDetails
+        error: 'An error occurred processing your request'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

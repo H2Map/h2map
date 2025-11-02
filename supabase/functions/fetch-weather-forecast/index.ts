@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const requestSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+  name: z.string().max(200).optional()
+});
 
 // Map Open-Meteo weather codes to OpenWeatherMap-style icon codes
 const mapWeatherCode = (code: number): { main: string; description: string; icon: string } => {
@@ -42,7 +50,19 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lon, name } = await req.json();
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Validate input
+    const body = await req.json();
+    const validatedData = requestSchema.parse(body);
+    const { lat, lon, name } = validatedData;
     
     console.log('Fetching weather forecast for:', { lat, lon });
 
@@ -199,10 +219,24 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: error.errors
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      );
+    }
+    
     console.error('Error in fetch-weather-forecast function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: 'An error occurred processing your request'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

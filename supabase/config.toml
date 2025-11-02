@@ -1,16 +1,4 @@
 project_id = "ernubxpsllxprtdylmcy"
 
-[functions.fetch-inmet-data]
-verify_jwt = false
-
-[functions.fetch-inmet-stations]
-verify_jwt = false
-
-[functions.fetch-weather-data]
-verify_jwt = false
-
-[functions.fetch-nasa-power-data]
-verify_jwt = false
-
-[functions.import-municipalities]
-verify_jwt = false
+# All functions now require JWT authentication for security
+# The frontend already sends proper Authorization headers

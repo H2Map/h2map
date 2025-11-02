@@ -1,9 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const requestSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,7 +21,38 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lon, startDate, endDate } = await req.json();
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Validate input
+    const body = await req.json();
+    const validatedData = requestSchema.parse(body);
+    const { lat, lon, startDate, endDate } = validatedData;
+
+    // Validate date range (max 2 years)
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysDiff < 0) {
+      return new Response(
+        JSON.stringify({ error: 'End date must be after start date' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
+    if (daysDiff > 730) {
+      return new Response(
+        JSON.stringify({ error: 'Date range cannot exceed 2 years' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
     
     console.log('Fetching NASA POWER data for:', { lat, lon, startDate, endDate });
 
@@ -143,10 +184,24 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: error.errors
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      );
+    }
+    
     console.error('Error in fetch-nasa-power-data function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: 'An error occurred processing your request'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

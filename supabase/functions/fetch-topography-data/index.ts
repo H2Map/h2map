@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const requestSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180)
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -12,13 +19,21 @@ serve(async (req) => {
   }
 
   try {
-    const { latitude, longitude } = await req.json();
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    // Validate input
+    const body = await req.json();
+    const validatedData = requestSchema.parse(body);
+    const { latitude, longitude } = validatedData;
     
     console.log('Fetching topography data for:', { latitude, longitude });
-    
-    if (!latitude || !longitude) {
-      throw new Error('Latitude and longitude are required');
-    }
 
     const apiKey = Deno.env.get('OPENTOPOGRAPHY_API_KEY');
     if (!apiKey) {
@@ -133,11 +148,24 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: error.errors
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      );
+    }
+    
     console.error('Error fetching topography data:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: 'Failed to fetch topography data from OpenTopography API'
+        error: 'An error occurred processing your request'
       }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
