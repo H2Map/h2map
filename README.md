@@ -60,6 +60,22 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Weather map layers (OpenWeather)
+
+To enable meteorological layers (wind, precipitation, clouds) on the interactive map:
+
+- Obtain an API key from OpenWeatherMap (`https://openweathermap.org/api`).
+- Set the key in `.env` as `VITE_OPENWEATHERMAP_API_KEY="YOUR_KEY_HERE"`.
+- Restart the dev server if it is running.
+
+In the Dashboard's map, use the in-map controls to toggle between:
+
+- `Vento`: shows wind overlay.
+- `Chuva`: shows precipitation overlay.
+- `Sol`: uses cloud cover as a proxy for sun exposure.
+
+If no key is configured, the base map will render but layers remain disabled with a notification.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/21040d9b-b4ab-438c-974f-ace33b343cd0) and click on Share -> Publish.
